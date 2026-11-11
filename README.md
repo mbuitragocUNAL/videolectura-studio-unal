@@ -9,7 +9,7 @@ sintética, música de fondo y el formato de entrega.
 > Hecho por estudiantes para el curso. **No es una herramienta oficial de la
 > Universidad Nacional.**
 
-**Guía en video:** [cómo grabar una lectura con Videolectura Studio](ENLACE-DE-YOUTUBE) (2:37)
+**Guía en video:** [cómo grabar una lectura con Videolectura Studio](https://youtu.be/NcUtmzC_DAw) (2:37)
 
 ## Qué hace
 

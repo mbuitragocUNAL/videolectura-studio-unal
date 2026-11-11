@@ -57,12 +57,19 @@ def main() -> None:
     ap.add_argument("--destacado", default="", help="segunda línea, más grande")
     ap.add_argument("--linea", default="", help="de qué trata, en una línea")
     ap.add_argument("--figura", default="", help="imagen para la derecha, relativa a la carpeta")
+    ap.add_argument("--captura", default="",
+                    help="en vez de --figura: una captura de pantalla, enmarcada a la derecha")
+    ap.add_argument("--antetitulo", default="", help="en dorado sobre el título; por defecto «LECTURA NN»")
     ap.add_argument("--salida", default="estudio/output/miniatura.png")
     a = ap.parse_args()
 
+    # Una carpeta de lectura da el número, el curso y el grupo; cualquier otra
+    # (la guía, por ejemplo) usa el curso ME01 y necesita --antetitulo.
     carpeta = Path(a.carpeta)
-    lectura = tomllib.loads((carpeta / "lectura.toml").read_text(encoding="utf-8"))["lectura"]
-    numero, curso, grupo = int(lectura["numero"]), lectura.get("curso", "ME"), int(lectura.get("grupo", 1))
+    toml = carpeta / "lectura.toml"
+    lectura = tomllib.loads(toml.read_text(encoding="utf-8"))["lectura"] if toml.exists() else {}
+    numero, curso, grupo = int(lectura.get("numero", 0)), lectura.get("curso", "ME"), int(lectura.get("grupo", 1))
+    antetitulo = a.antetitulo or f"LECTURA {numero:02d}"
     nombre_curso = {"ME": "Modelos Estocásticos y Simulación", "LP": "Lenguajes de Programación"}.get(curso, curso)
 
     img = Image.new("RGB", (ANCHO * K, ALTO * K), FONDO)
@@ -100,6 +107,28 @@ def main() -> None:
         y0 = (ALTO * K - fig.height) // 2 + int(40 * K)
         img.paste(fig, (x0, y0), mascara)
         ancho_texto = (x0 / K) - 70 - 40
+    elif a.captura:
+        # Una pantalla del video, en un marco con esquinas redondeadas y
+        # sombra, inclinada apenas hacia el centro.
+        cap = Image.open(carpeta / a.captura).convert("RGB")
+        ancho = int(560 * K)
+        cap = cap.resize((ancho, int(cap.height * ancho / cap.width)), Image.LANCZOS)
+        radio, borde = int(16 * K), int(3 * K)
+        marco = Image.new("RGBA", (cap.width + 2 * borde, cap.height + 2 * borde), (0, 0, 0, 0))
+        ImageDraw.Draw(marco).rounded_rectangle((0, 0, marco.width - 1, marco.height - 1), radio + borde,
+                                                fill=(43, 50, 59, 255))
+        mascara = Image.new("L", cap.size, 0)
+        ImageDraw.Draw(mascara).rounded_rectangle((0, 0, cap.width - 1, cap.height - 1), radio, fill=255)
+        marco.paste(cap, (borde, borde), mascara)
+        marco = marco.rotate(-3, resample=Image.BICUBIC, expand=True)
+        sombra = Image.new("RGBA", (marco.width + 120 * K, marco.height + 120 * K), (0, 0, 0, 0))
+        sombra.paste((0, 0, 0, 150), (60 * K, 80 * K, 60 * K + marco.width, 80 * K + marco.height), marco)
+        sombra = sombra.filter(ImageFilter.GaussianBlur(28 * K))
+        x0 = ANCHO * K - marco.width - int(30 * K)
+        y0 = (ALTO * K - marco.height) // 2 + int(55 * K)
+        img.paste(sombra, (x0 - 60 * K, y0 - 60 * K), sombra)
+        img.paste(marco, (x0, y0), marco)
+        ancho_texto = (x0 / K) - 70 - 30
 
     # Encabezado: escudo, universidad, curso.
     tx = 44 * K
@@ -115,7 +144,7 @@ def main() -> None:
 
     # El bloque del título.
     x, y = 70 * K, 190 * K
-    espaciado(draw, (x, y), f"LECTURA {numero:02d}", fuente("Medium", 40), DORADO, 9)
+    espaciado(draw, (x, y), antetitulo, fuente("Medium", 40), DORADO, 9)
     y += 72 * K
     f1 = ajustar(draw, a.titulo, "SemiBold", 76, ancho_texto)
     draw.text((x, y), a.titulo, font=f1, fill=TINTA)

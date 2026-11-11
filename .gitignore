@@ -38,3 +38,4 @@ preparar/marca/escudo-unal-blanco.png
 web/
 .DS_Store
 frontend/dist
+guia/youtube/*.png

@@ -1,0 +1,44 @@
+Videolectura Studio UNAL · Cómo grabar tu video-lectura (guía)
+
+Universidad Nacional de Colombia · Modelos Estocásticos y Simulación · ME01
+
+Videolectura Studio es una herramienta libre, hecha por estudiantes, para grabar las video-lecturas del curso. Tú lees un párrafo a la vez; el estudio arma el video y se encarga de que cumpla los lineamientos 3.2.3:
+
+• El texto llena la pantalla, compuesto de nuevo con la letra del propio libro, y corre sincronizado con tu voz.
+• Cada figura aparece sola con su pie justo cuando lo lees, y una flecha marca dónde sigue la lectura (2.d).
+• Mientras se habla de una figura, queda fija a la derecha sin que el texto cambie de tamaño (2.f).
+• Las citas textuales van con voz sintética, una por personaje: ElevenLabs, Qwen3-TTS en tu computador o un audio tuyo (2.i).
+• Música de fondo opcional (2.j), silencios largos recortados y todas las tomas al mismo volumen.
+• Entrega en 1080p con el título del curso, descripción y miniatura.
+
+Solo necesitas Docker y Google Chrome:
+  git clone https://github.com/mbuitragocUNAL/videolectura-studio-unal
+  cd videolectura-studio-unal
+  ./estudio abrir
+y abres http://localhost:8100.
+
+Código, instrucciones y manual técnico: https://github.com/mbuitragocUNAL/videolectura-studio-unal
+
+CAPÍTULOS
+0:00 Qué es Videolectura Studio
+0:14 Lo que piden los lineamientos
+0:43 Instalar y abrir
+0:54 Paso 1: preparar la lectura
+1:23 Paso 2: grabar
+1:44 Paso 3: el render
+2:11 Paso 4: la entrega
+2:22 Dónde encontrarlo
+
+No es una herramienta oficial de la Universidad Nacional de Colombia. Si algo falla, abre un issue en GitHub.
+
+CRÉDITOS
+Narración con voz sintética, generada con Qwen3-TTS.
+Video hecho con HyperFrames (https://github.com/heygen-com/hyperframes).
+Los fragmentos de ejemplo son de la Lectura 22, «Belleza cuántica II: exuberancia», de El mundo como obra de arte, de Frank Wilczek (Crítica, 2016).
+
+MÚSICA
+"Bossa Antigua" Kevin MacLeod (incompetech.com)
+Licensed under Creative Commons: By Attribution 4.0
+https://creativecommons.org/licenses/by/4.0/
+
+Duración total: 2:37
