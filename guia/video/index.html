@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="es" data-resolution="landscape">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=1920, height=1080" />
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<style>
+@font-face { font-family: Plex; src: url(assets/marca/IBMPlexSans-Regular.ttf); font-weight: 400; }
+@font-face { font-family: Plex; src: url(assets/marca/IBMPlexSans-Medium.ttf); font-weight: 500; }
+@font-face { font-family: Plex; src: url(assets/marca/IBMPlexSans-SemiBold.ttf); font-weight: 600; }
+:root {
+  --fondo: #10131A; --tinta: #ECE6D8; --apagado: #8A8F9C; --dorado: #F2B84B;
+  --c0: #5DA9E9; --c1: #F2B84B; --c2: #A78BFA; --c3: #4FC1A6; --c4: #E8706A;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 1920px; height: 1080px; overflow: hidden; background: var(--fondo); }
+#root { position: relative; width: 100%; height: 100%; font-family: Plex, sans-serif; color: var(--tinta); }
+#nube { position: absolute; inset: 0; }
+.escena { position: absolute; inset: 0; }
+.sello { position: absolute; left: 80px; top: 64px; display: flex; gap: 28px; align-items: center; }
+.sello img { height: 92px; }
+.espaciado { letter-spacing: 0.32em; font-size: 22px; font-weight: 500; color: var(--apagado); }
+.apagado { color: var(--apagado); font-size: 28px; margin-top: 6px; }
+.kicker { letter-spacing: 0.28em; font-size: 30px; font-weight: 500; color: var(--dorado); }
+.portada { position: absolute; left: 112px; top: 300px; }
+.portada h1 { font-size: 168px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.05; margin-top: 18px; }
+.unal { font-size: 64px; font-weight: 600; letter-spacing: 0.3em; color: var(--dorado); margin-top: 4px; }
+.barra { display: flex; gap: 8px; margin: 34px 0 30px; }
+.barra i { width: 112px; height: 10px; display: block; }
+.lema { font-size: 40px; color: var(--apagado); }
+.encabezado { position: absolute; left: 80px; top: 70px; }
+.encabezado h2 { font-size: 64px; font-weight: 600; margin-top: 10px; letter-spacing: -0.01em; }
+.reglas { position: absolute; left: 112px; top: 300px; list-style: none; display: grid; gap: 30px; }
+.reglas li { font-size: 44px; display: flex; align-items: center; gap: 30px; }
+.cod { font-size: 28px; font-weight: 600; color: var(--fondo); padding: 6px 16px; border-radius: 8px; min-width: 92px; text-align: center; }
+.veredicto { position: absolute; left: 112px; top: 870px; font-size: 42px; display: flex; gap: 60px; }
+#v-mano { color: var(--apagado); text-decoration: line-through; }
+#v-aqui b { color: var(--dorado); font-weight: 600; }
+.chips { display: flex; gap: 16px; flex-wrap: wrap; }
+.escena > .chips { position: absolute; left: 80px; top: 250px; }
+.chip { font-size: 30px; padding: 10px 24px; border: 2px solid #2b323b; border-radius: 999px; background: #161a22; }
+.terminal { position: absolute; left: 80px; top: 380px; width: 1760px; background: #0a0c10; border: 2px solid #2b323b;
+  border-radius: 18px; padding: 34px 44px 44px; font-family: Menlo, monospace; font-size: 40px; line-height: 1.75; }
+.puntos { display: flex; gap: 12px; margin-bottom: 18px; }
+.puntos i { width: 18px; height: 18px; border-radius: 50%; background: #2b323b; display: block; }
+.tl { opacity: 0; white-space: pre; display: flex; }
+.pr { color: var(--c3); }
+.tx { display: inline-block; overflow: hidden; white-space: pre; vertical-align: bottom; }
+#t3 .tx { color: var(--dorado); }
+.marco { position: absolute; left: 600px; top: 200px; width: 1244px; height: 700px; overflow: hidden;
+  border-radius: 16px; border: 2px solid #2b323b; background: #0d0f12; box-shadow: 0 30px 80px rgba(0,0,0,.45); }
+.captura { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; }
+.pasos, .teclas, .rotulos { position: absolute; left: 80px; top: 250px; width: 470px; list-style: none; display: grid; gap: 26px; }
+.pasos li { font-size: 34px; display: flex; gap: 20px; align-items: center; }
+.pasos span { width: 50px; height: 50px; border-radius: 50%; background: var(--dorado); color: var(--fondo);
+  display: grid; place-items: center; font-weight: 600; font-size: 26px; flex: none; }
+.teclas li { font-size: 34px; display: flex; gap: 22px; align-items: center; opacity: 0; }
+kbd { font-family: Plex, sans-serif; font-weight: 600; font-size: 30px; min-width: 64px; padding: 8px 16px; text-align: center;
+  border: 2px solid var(--dorado); color: var(--dorado); border-radius: 10px; background: #161a22; flex: none; }
+.nota { position: absolute; left: 80px; top: 760px; width: 470px; font-size: 30px; color: var(--apagado); opacity: 0; }
+.rotulos li { font-size: 32px; padding-left: 22px; border-left: 6px solid var(--c); opacity: 0; line-height: 1.25; }
+.fragmento { position: absolute; left: 602px; top: 202px; width: 1240px; height: 696px;
+  object-fit: cover; border-radius: 14px; z-index: 5; }
+.miniatura { position: absolute; left: 80px; top: 250px; width: 960px; border-radius: 14px; border: 2px solid #2b323b; }
+.entrega { position: absolute; left: 1100px; top: 270px; width: 740px; display: grid; gap: 36px; }
+.titulo-yt { font-family: Menlo, monospace; font-size: 34px; line-height: 1.4; padding: 26px; background: #0a0c10;
+  border: 2px solid #2b323b; border-radius: 14px; }
+.cierre { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.cierre .barra { justify-content: center; }
+.escudo-grande { height: 150px; margin-bottom: 40px; }
+.repo { font-family: Menlo, monospace; font-size: 54px; margin-top: 26px; }
+.creditos { font-size: 24px; color: #5d6370; margin-top: 50px; }
+</style>
+</head>
+<body>
+<div id="root" data-composition-id="main" data-start="0" data-duration="157.16" data-width="1920" data-height="1080">
+<canvas id="nube" width="1920" height="1080"></canvas>
+<section id="e1" class="clip escena " data-start="0.0" data-duration="14.84" data-track-index="1">
+  <div class="sello"><img src="assets/marca/escudo-unal-blanco.png" alt="">
+    <div><div class="espaciado">UNIVERSIDAD NACIONAL DE COLOMBIA</div>
+    <div class="apagado">Modelos Estocásticos y Simulación · ME01</div></div></div>
+  <div class="portada">
+    <div class="kicker" id="p-kicker">GUÍA</div>
+    <h1 id="p-titulo">Videolectura Studio</h1>
+    <div class="unal" id="p-unal">UNAL</div>
+    <div id="p-barra"><div class="barra"><i style="background:var(--c0)"></i><i style="background:var(--c1)"></i><i style="background:var(--c2)"></i><i style="background:var(--c3)"></i><i style="background:var(--c4)"></i></div></div>
+    <p class="lema" id="p-lema">Graba tu video-lectura. El estudio se encarga de los lineamientos.</p>
+  </div></section>
+<section id="e2" class="clip escena " data-start="14.84" data-duration="28.44" data-track-index="1"><div class="encabezado"><div class="kicker">LINEAMIENTOS 3.2.3</div><h2>Lo que pide una video-lectura</h2></div>
+  <ul class="reglas"><li id="r0"><span class="cod" style="background:var(--c0)">2.c</span>La página llena la pantalla</li><li id="r1"><span class="cod" style="background:var(--c1)">2.d</span>Cada figura, sola con su pie, la primera vez</li><li id="r2"><span class="cod" style="background:var(--c2)">2.d</span>Una flecha marca dónde sigue la lectura</li><li id="r3"><span class="cod" style="background:var(--c3)">2.f</span>La figura fija a la derecha, el texto del mismo tamaño</li><li id="r4"><span class="cod" style="background:var(--c4)">2.i</span>Citas con voz sintética, una voz por personaje</li></ul>
+  <div class="veredicto"><span id="v-mano">A mano, en un editor: horas.</span>
+  <span id="v-aqui">Aquí: <b>automático</b>.</span></div></section>
+<section id="e3" class="clip escena " data-start="43.28" data-duration="11.4" data-track-index="1"><div class="encabezado"><div class="kicker">INSTALAR</div><h2>Solo Docker y Google Chrome</h2></div>
+  <div class="chips"><span class="chip" id="ch-docker">Docker</span><span class="chip" id="ch-chrome">Google Chrome</span></div>
+  <div class="terminal"><div class="puntos"><i></i><i></i><i></i></div><div class="tl" id="t0"><span class="pr">$ </span><span class="tx" id="tx0">git clone https://github.com/mbuitragocUNAL/videolectura-studio-unal</span></div><div class="tl" id="t1"><span class="pr">$ </span><span class="tx" id="tx1">cd videolectura-studio-unal</span></div><div class="tl" id="t2"><span class="pr">$ </span><span class="tx" id="tx2">./estudio abrir</span></div><div class="tl" id="t3"><span class="pr"></span><span class="tx" id="tx3">  Estudio en http://localhost:8100</span></div></div></section>
+<section id="e4" class="clip escena " data-start="54.68" data-duration="29.16" data-track-index="1"><div class="encabezado"><div class="kicker">PASO 1</div><h2>Preparar la lectura</h2></div><ol class="pasos" id="pp"><li id="pp-0"><span>1</span>Libro y capítulo</li><li id="pp-1"><span>2</span>Dónde empieza y termina</li><li id="pp-2"><span>3</span>Figuras y láminas</li><li id="pp-3"><span>4</span>Citas y voces</li><li id="pp-4"><span>5</span>Música de fondo</li></ol><div class="marco" id="m4"><img id="c4a" class="captura" src="assets/capturas/preparar-libro.png" alt=""><img id="c4b" class="captura" src="assets/capturas/preparar-figuras.png" alt=""><img id="c4c" class="captura" src="assets/capturas/preparar-citas.png" alt=""></div></section>
+<section id="e5" class="clip escena " data-start="83.84" data-duration="20.28" data-track-index="1"><div class="encabezado"><div class="kicker">PASO 2</div><h2>Grabar: un párrafo, una toma</h2></div><ul class="teclas"><li id="k0"><kbd>R</kbd>grabar</li><li id="k1"><kbd>S</kbd>parar</li><li id="k2"><kbd>Av Pág</kbd>el siguiente párrafo</li><li id="k3"><kbd>N</kbd>la cita, por los audífonos</li></ul><div class="nota" id="k-nota">¿Te equivocaste? La toma nueva reemplaza a la anterior.</div><div class="marco" id="m5"><img id="c5" class="captura" src="assets/capturas/consola.png" alt=""></div></section>
+<section id="e6" class="clip escena " data-start="104.12" data-duration="27.16" data-track-index="1"><div class="encabezado"><div class="kicker">PASO 3</div><h2>El render</h2></div><ul class="rotulos"><li id="g0" style="--c:var(--c0)">El texto corre con tu voz</li><li id="g1" style="--c:var(--c1)">La figura, sola con su pie (2.d)</li><li id="g2" style="--c:var(--c2)">Flecha de regreso (2.d)</li><li id="g3" style="--c:var(--c3)">Figura fija · mismo tamaño (2.f)</li><li id="g4" style="--c:var(--c4)">Sin silencios largos · volumen parejo</li></ul><div class="marco" id="m6"></div></section>
+<section id="e7" class="clip escena " data-start="131.28" data-duration="11.32" data-track-index="1"><div class="encabezado"><div class="kicker">PASO 4</div><h2>La entrega</h2></div>
+  <img class="miniatura" id="mini" src="assets/marca/miniatura-lectura22.png" alt="">
+  <div class="entrega">
+    <div class="titulo-yt" id="yt">ME01 Lectura 22 Belleza cuántica II: exuberancia</div>
+    <div class="chips"><span class="chip" id="ent1">1080p</span><span class="chip" id="ent2">título del curso (2.k)</span>
+    <span class="chip" id="ent3">descripción</span><span class="chip" id="ent4">miniatura</span></div>
+  </div></section>
+<section id="e8" class="clip escena " data-start="142.6" data-duration="13.96" data-track-index="1">
+  <div class="cierre">
+    <img src="assets/marca/escudo-unal-blanco.png" class="escudo-grande" alt="">
+    <div class="kicker" id="c-k">VIDEOLECTURA STUDIO · UNAL</div>
+    <div class="repo" id="c-repo">github.com/mbuitragocUNAL/videolectura-studio-unal</div>
+    <div class="barra"><i style="background:var(--c0)"></i><i style="background:var(--c1)"></i><i style="background:var(--c2)"></i><i style="background:var(--c3)"></i><i style="background:var(--c4)"></i></div>
+    <p class="lema" id="c-nota">Hecho por estudiantes · no es una herramienta oficial de la UNAL</p>
+    <p class="creditos" id="c-cred">Narración: Qwen3-TTS · Música: «Bossa Antigua», Kevin MacLeod (incompetech.com), CC BY 4.0</p>
+  </div></section>
+<video id="v-texto" class="clip fragmento" src="assets/clips/texto.mp4" muted playsinline data-start="104.12" data-duration="8.04" data-media-start="0.0" data-track-index="2"></video>
+<video id="v-figura" class="clip fragmento" src="assets/clips/figura.mp4" muted playsinline data-start="112.16" data-duration="6.56" data-media-start="0.0" data-track-index="2"></video>
+<video id="v-flecha" class="clip fragmento" src="assets/clips/flecha.mp4" muted playsinline data-start="118.72" data-duration="2.8" data-media-start="1.6" data-track-index="2"></video>
+<video id="v-fija" class="clip fragmento" src="assets/clips/fija.mp4" muted playsinline data-start="121.52" data-duration="9.76" data-media-start="0.0" data-track-index="2"></video>
+<audio id="narracion-1" src="assets/narracion/escena-1.wav" data-start="0.5" data-duration="13.44" data-track-index="3"></audio>
+<audio id="narracion-2" src="assets/narracion/escena-2.wav" data-start="15.34" data-duration="27.04" data-track-index="3"></audio>
+<audio id="narracion-3" src="assets/narracion/escena-3.wav" data-start="43.78" data-duration="10.0" data-track-index="3"></audio>
+<audio id="narracion-4" src="assets/narracion/escena-4.wav" data-start="55.18" data-duration="27.76" data-track-index="3"></audio>
+<audio id="narracion-5" src="assets/narracion/escena-5.wav" data-start="84.34" data-duration="18.88" data-track-index="3"></audio>
+<audio id="narracion-6" src="assets/narracion/escena-6.wav" data-start="104.62" data-duration="25.76" data-track-index="3"></audio>
+<audio id="narracion-7" src="assets/narracion/escena-7.wav" data-start="131.78" data-duration="9.92" data-track-index="3"></audio>
+<audio id="narracion-8" src="assets/narracion/escena-8.wav" data-start="143.1" data-duration="12.56" data-track-index="3"></audio>
+<audio id="musica" src="assets/musica/bossa-antigua.mp3" data-start="0" data-duration="157.16" data-volume="0.55" data-fade-in="1.5" data-fade-out="3" loop data-track-index="4"></audio>
+</div>
+<script>
+// La nube de puntos de la miniatura, con un generador fijo: el mismo dibujo en cada cuadro.
+(function () {
+  const c = document.getElementById("nube").getContext("2d");
+  let s = 22;
+  const r = () => (s = (s * 1103515245 + 12345) % 2147483648) / 2147483648;
+  const g = () => (r() + r() + r() - 1.5) / 1.5;
+  const centros = [[0.12, 0.2, 0.16], [0.86, 0.75, 0.18], [0.5, 1.0, 0.12]];
+  const colores = ["#5DA9E9", "#F2B84B", "#A78BFA", "#4FC1A6", "#E8706A"];
+  for (let i = 0; i < 520; i++) {
+    const [cx, cy, sp] = centros[i % 5 < 2 ? 0 : i % 5 < 4 ? 1 : 2];
+    const x = (cx + g() * sp) * 1920, y = (cy + g() * sp * 1.6) * 1080;
+    c.globalAlpha = 0.12 + r() * 0.3;
+    c.fillStyle = colores[Math.floor(r() * 5)];
+    c.beginPath(); c.arc(x, y, 1.2 + r() * 2.2, 0, Math.PI * 2); c.fill();
+  }
+})();
+const tl = gsap.timeline({ paused: true });
+tl.fromTo("#e1", {opacity: 0}, {opacity: 1, duration: 0.45, ease: "power2.out"}, 0.0);
+tl.to("#e1", {opacity: 0, duration: 0.35, ease: "power2.in"}, 14.49);
+tl.fromTo("#p-kicker", {opacity: 0, y: 18}, {opacity: 1, y: 0, duration: 0.5, ease: "power3.out"}, 0.15);
+tl.fromTo("#p-titulo", {opacity: 0, y: 18}, {opacity: 1, y: 0, duration: 0.5, ease: "power3.out"}, 0.37);
+tl.fromTo("#p-unal", {opacity: 0, y: 18}, {opacity: 1, y: 0, duration: 0.5, ease: "power3.out"}, 0.59);
+tl.fromTo("#p-barra", {opacity: 0, y: 18}, {opacity: 1, y: 0, duration: 0.5, ease: "power3.out"}, 0.81);
+tl.fromTo("#p-lema", {opacity: 0, y: 18}, {opacity: 1, y: 0, duration: 0.5, ease: "power3.out"}, 1.03);
+tl.fromTo("#e2", {opacity: 0}, {opacity: 1, duration: 0.45, ease: "power2.out"}, 14.84);
+tl.to("#e2", {opacity: 0, duration: 0.35, ease: "power2.in"}, 42.93);
+tl.fromTo("#r0", {opacity: 0, y: 0}, {opacity: 1, y: 0, duration: 0.5, ease: "power3.out"}, 18.44);
+tl.from("#r0", {x: -30, duration: 0.5, ease: "power3.out"}, 18.44);
+tl.fromTo("#r1", {opacity: 0, y: 0}, {opacity: 1, y: 0, duration: 0.5, ease: "power3.out"}, 21.24);
+tl.from("#r1", {x: -30, duration: 0.5, ease: "power3.out"}, 21.24);
+tl.fromTo("#r2", {opacity: 0, y: 0}, {opacity: 1, y: 0, duration: 0.5, ease: "power3.out"}, 25.04);
+tl.from("#r2", {x: -30, duration: 0.5, ease: "power3.out"}, 25.04);
+tl.fromTo("#r3", {opacity: 0, y: 0}, {opacity: 1, y: 0, duration: 0.5, ease: "power3.out"}, 29.44);
+tl.from("#r3", {x: -30, duration: 0.5, ease: "power3.out"}, 29.44);
+tl.fromTo("#r4", {opacity: 0, y: 0}, {opacity: 1, y: 0, duration: 0.5, ease: "power3.out"}, 32.84);
+tl.from("#r4", {x: -30, duration: 0.5, ease: "power3.out"}, 32.84);
+tl.fromTo("#v-mano", {opacity: 0, y: 18}, {opacity: 1, y: 0, duration: 0.5, ease: "power3.out"}, 36.84);
+tl.fromTo("#v-aqui", {opacity: 0, y: 18}, {opacity: 1, y: 0, duration: 0.5, ease: "power3.out"}, 39.84);
+tl.fromTo("#e3", {opacity: 0}, {opacity: 1, duration: 0.45, ease: "power2.out"}, 43.28);
+tl.to("#e3", {opacity: 0, duration: 0.35, ease: "power2.in"}, 54.33);
+tl.fromTo("#ch-docker", {opacity: 0, y: 18}, {opacity: 1, y: 0, duration: 0.5, ease: "power3.out"}, 44.38);
+tl.fromTo("#ch-chrome", {opacity: 0, y: 18}, {opacity: 1, y: 0, duration: 0.5, ease: "power3.out"}, 45.18);
+tl.set("#t0", {opacity: 1}, 46.78);
+tl.fromTo("#tx0", {width: "0ch"}, {width: "69ch", duration: 1.4, ease: "steps(69)"}, 46.78);
+tl.set("#t1", {opacity: 1}, 48.08);
+tl.fromTo("#tx1", {width: "0ch"}, {width: "28ch", duration: 0.98, ease: "steps(28)"}, 48.08);
+tl.set("#t2", {opacity: 1}, 48.98);
+tl.fromTo("#tx2", {width: "0ch"}, {width: "16ch", duration: 0.56, ease: "steps(16)"}, 48.98);
+tl.set("#t3", {opacity: 1}, 50.78);
+tl.fromTo("#tx3", {width: "0ch"}, {width: "35ch", duration: 1.23, ease: "steps(35)"}, 50.78);
+tl.fromTo("#e4", {opacity: 0}, {opacity: 1, duration: 0.45, ease: "power2.out"}, 54.68);
+tl.to("#e4", {opacity: 0, duration: 0.35, ease: "power2.in"}, 83.49);
+tl.set("#c4a", {x: 0.0, y: 0.1, scale: 0.6479166666666667}, 54.68);
+tl.set("#c4b", {x: 0.0, y: 0.1, scale: 0.6479166666666667}, 54.68);
+tl.set("#c4c", {x: 0.0, y: 0.1, scale: 0.6479166666666667}, 54.68);
+tl.set("#c4b, #c4c", {opacity: 0}, 54.68);
+tl.to("#pp-0", {opacity: 1, duration: 0.3}, 54.68);
+tl.to("#pp-1", {opacity: 0.38, duration: 0.3}, 54.68);
+tl.to("#pp-2", {opacity: 0.38, duration: 0.3}, 54.68);
+tl.to("#pp-3", {opacity: 0.38, duration: 0.3}, 54.68);
+tl.to("#pp-4", {opacity: 0.38, duration: 0.3}, 54.68);
+tl.to("#c4a", {x: 7.0, y: -25.0, scale: 1.5, duration: 1.1, ease: "power2.inOut"}, 55.78);
+tl.to("#pp-0", {opacity: 0.38, duration: 0.3}, 60.18);
+tl.to("#pp-1", {opacity: 1, duration: 0.3}, 60.18);
+tl.to("#pp-2", {opacity: 0.38, duration: 0.3}, 60.18);
+tl.to("#pp-3", {opacity: 0.38, duration: 0.3}, 60.18);
+tl.to("#pp-4", {opacity: 0.38, duration: 0.3}, 60.18);
+tl.to("#c4a", {x: 42.0, y: -694.0, scale: 1.45, duration: 1.1, ease: "power2.inOut"}, 60.18);
+tl.to("#pp-0", {opacity: 0.38, duration: 0.3}, 64.58);
+tl.to("#pp-1", {opacity: 0.38, duration: 0.3}, 64.58);
+tl.to("#pp-2", {opacity: 1, duration: 0.3}, 64.58);
+tl.to("#pp-3", {opacity: 0.38, duration: 0.3}, 64.58);
+tl.to("#pp-4", {opacity: 0.38, duration: 0.3}, 64.58);
+tl.set("#c4b", {x: 14.5, y: -163.0, scale: 1.35}, 64.18);
+tl.to("#c4b", {opacity: 1, duration: 0.4}, 64.58);
+tl.to("#pp-0", {opacity: 0.38, duration: 0.3}, 71.18);
+tl.to("#pp-1", {opacity: 0.38, duration: 0.3}, 71.18);
+tl.to("#pp-2", {opacity: 0.38, duration: 0.3}, 71.18);
+tl.to("#pp-3", {opacity: 1, duration: 0.3}, 71.18);
+tl.to("#pp-4", {opacity: 0.38, duration: 0.3}, 71.18);
+tl.set("#c4c", {x: 17.5, y: -316.5, scale: 1.55}, 70.78);
+tl.to("#c4c", {opacity: 1, duration: 0.4}, 71.18);
+tl.to("#pp-0", {opacity: 0.38, duration: 0.3}, 79.98);
+tl.to("#pp-1", {opacity: 0.38, duration: 0.3}, 79.98);
+tl.to("#pp-2", {opacity: 0.38, duration: 0.3}, 79.98);
+tl.to("#pp-3", {opacity: 0.38, duration: 0.3}, 79.98);
+tl.to("#pp-4", {opacity: 1, duration: 0.3}, 79.98);
+tl.to("#c4c", {x: 17.5, y: -1052.8, scale: 1.55, duration: 1.1, ease: "power2.inOut"}, 79.98);
+tl.fromTo("#e5", {opacity: 0}, {opacity: 1, duration: 0.45, ease: "power2.out"}, 83.84);
+tl.to("#e5", {opacity: 0, duration: 0.35, ease: "power2.in"}, 103.77);
+tl.set("#c5", {x: 0.0, y: 0.1, scale: 0.6479166666666667}, 83.84);
+tl.to("#c5", {x: -78.0, y: -210.0, scale: 1.0, duration: 1.1, ease: "power2.inOut"}, 85.34);
+tl.to("#c5", {x: -2154.0, y: -514.0, scale: 1.6, duration: 1.1, ease: "power2.inOut"}, 88.34);
+tl.fromTo("#k0", {opacity: 0, y: 0}, {opacity: 1, y: 0, duration: 0.5, ease: "power3.out"}, 88.64);
+tl.fromTo("#k1", {opacity: 0, y: 0}, {opacity: 1, y: 0, duration: 0.5, ease: "power3.out"}, 91.34);
+tl.fromTo("#k2", {opacity: 0, y: 0}, {opacity: 1, y: 0, duration: 0.5, ease: "power3.out"}, 93.94);
+tl.fromTo("#k3", {opacity: 0, y: 0}, {opacity: 1, y: 0, duration: 0.5, ease: "power3.out"}, 99.54);
+tl.fromTo("#k-nota", {opacity: 0, y: 18}, {opacity: 1, y: 0, duration: 0.5, ease: "power3.out"}, 95.04);
+tl.to("#c5", {x: -2154.0, y: -626.0, scale: 1.6, duration: 1.1, ease: "power2.inOut"}, 99.14);
+tl.fromTo("#e6", {opacity: 0}, {opacity: 1, duration: 0.45, ease: "power2.out"}, 104.12);
+tl.to("#e6", {opacity: 0, duration: 0.35, ease: "power2.in"}, 130.93);
+tl.fromTo("#g0", {opacity: 0, y: 0}, {opacity: 1, y: 0, duration: 0.5, ease: "power3.out"}, 109.92);
+tl.fromTo("#g1", {opacity: 0, y: 0}, {opacity: 1, y: 0, duration: 0.5, ease: "power3.out"}, 116.52);
+tl.fromTo("#g2", {opacity: 0, y: 0}, {opacity: 1, y: 0, duration: 0.5, ease: "power3.out"}, 119.62);
+tl.fromTo("#g3", {opacity: 0, y: 0}, {opacity: 1, y: 0, duration: 0.5, ease: "power3.out"}, 122.22);
+tl.fromTo("#g4", {opacity: 0, y: 0}, {opacity: 1, y: 0, duration: 0.5, ease: "power3.out"}, 126.12);
+tl.fromTo("#e7", {opacity: 0}, {opacity: 1, duration: 0.45, ease: "power2.out"}, 131.28);
+tl.to("#e7", {opacity: 0, duration: 0.35, ease: "power2.in"}, 142.25);
+tl.fromTo("#mini", {opacity: 0, y: 18}, {opacity: 1, y: 0, duration: 0.5, ease: "power3.out"}, 132.08);
+tl.fromTo("#yt", {opacity: 0, y: 18}, {opacity: 1, y: 0, duration: 0.5, ease: "power3.out"}, 134.78);
+tl.fromTo("#ent1", {opacity: 0, y: 18}, {opacity: 1, y: 0, duration: 0.5, ease: "power3.out"}, 133.58);
+tl.fromTo("#ent2", {opacity: 0, y: 18}, {opacity: 1, y: 0, duration: 0.5, ease: "power3.out"}, 135.38);
+tl.fromTo("#ent3", {opacity: 0, y: 18}, {opacity: 1, y: 0, duration: 0.5, ease: "power3.out"}, 137.38);
+tl.fromTo("#ent4", {opacity: 0, y: 18}, {opacity: 1, y: 0, duration: 0.5, ease: "power3.out"}, 138.38);
+tl.fromTo("#e8", {opacity: 0}, {opacity: 1, duration: 0.45, ease: "power2.out"}, 142.6);
+tl.to("#e8", {opacity: 0, duration: 0.35, ease: "power2.in"}, 156.21);
+tl.fromTo("#c-k", {opacity: 0, y: 18}, {opacity: 1, y: 0, duration: 0.5, ease: "power3.out"}, 143.3);
+tl.fromTo("#c-repo", {opacity: 0, y: 18}, {opacity: 1, y: 0, duration: 0.5, ease: "power3.out"}, 143.9);
+tl.fromTo("#c-nota", {opacity: 0, y: 18}, {opacity: 1, y: 0, duration: 0.5, ease: "power3.out"}, 149.6);
+tl.fromTo("#c-cred", {opacity: 0, y: 18}, {opacity: 1, y: 0, duration: 0.5, ease: "power3.out"}, 151.1);
+window.__timelines = window.__timelines || {};
+window.__timelines["main"] = tl;
+tl.seek(0);
+</script>
+</body>
+</html>

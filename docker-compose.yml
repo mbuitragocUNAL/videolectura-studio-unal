@@ -1,0 +1,94 @@
+# The studio is published on 127.0.0.1 on purpose: getUserMedia and
+# getDisplayMedia only work in a secure context, and http://localhost counts as
+# one. Reaching it from another machine over plain HTTP would silently break
+# recording.
+services:
+  # Everything in one binary: the Go API and the compiled Nuxt interface.
+  # This is what you run to actually record.
+  studio:
+    build:
+      context: .
+      args:
+        VOZ_LOCAL: ${VOZ_LOCAL:-0}
+    image: estoc-studio:latest
+    container_name: estoc-studio
+    ports:
+      - "127.0.0.1:8100:8080"
+    volumes:
+      # A reading kept outside lecturas/ (./estudio abrir <carpeta> sets LECTURA
+      # and DATOS for it). Readings under lecturas/ need neither.
+      - ${LECTURA:-./lecturas}:/reading:ro
+      - ${DATOS:-./data}:/data
+      # Every reading and the books, so the console can switch between
+      # readings, prepare new ones and keep their takes beside them.
+      - ./lecturas:/estudio/lecturas
+      - ./libros:/estudio/libros
+      # The characters' voices, shared by every reading, and the ElevenLabs
+      # key (voces/claves.json). Outside git.
+      - ./voces:/estudio/voces
+      # Background tracks (2.j), shared by every reading. Outside git.
+      - ./musica:/estudio/musica
+      # The Whisper model (about 500 MB), and Qwen's if installed, downloaded once.
+      - whisper-models:/cache/huggingface
+    environment:
+      TZ: America/Bogota
+      # ./estudio abrir points these at a reading; empty opens the first
+      # prepared one under lecturas/, or none on a fresh clone.
+      STUDIO_READING_DIR: ${STUDIO_READING_DIR:-}
+      STUDIO_DATA_DIR: ${STUDIO_DATA_DIR:-}
+      # Optional: the key can also be set from the console.
+      ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY:-}
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/api/lecturas')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+
+  # Hot-reloading interface for working on the UI. It proxies to the studio
+  # container, so both must be up.
+  #   docker compose --profile dev up
+  frontend:
+    image: node:24-alpine
+    container_name: estoc-studio-frontend
+    working_dir: /app
+    command: >
+      sh -c "corepack enable &&
+             pnpm install &&
+             pnpm dev --host 0.0.0.0 --port 3000"
+    volumes:
+      - ./frontend:/app
+      # Kept in a volume so the container's Linux binaries never overwrite the
+      # host's macOS ones.
+      - frontend-modules:/app/node_modules
+    ports:
+      - "127.0.0.1:3300:3000"
+    environment:
+      TZ: America/Bogota
+      STUDIO_API: http://studio:8080
+    depends_on:
+      - studio
+    profiles: ["dev"]
+
+  # One-off preparation: preparar/lector.py turns lectura.toml and the book's
+  # PDF into pages, figures, quote texts and marcas.json.
+  #   ./estudio preparar lecturas/22-…   (runs this when there is no local Python)
+  prep:
+    build:
+      context: .
+      dockerfile: Dockerfile.prep
+    image: estoc-studio-prep:latest
+    volumes:
+      - .:/estudio
+      # The folder holding the book. lectura.toml keeps the host path; inside
+      # the container the book is looked up here by its file name.
+      - ${LIBROS:-${HOME}/Downloads}:/libros:ro
+    environment:
+      TZ: America/Bogota
+      LIBROS: /libros
+    profiles: ["tools"]
+
+volumes:
+  frontend-modules:
+  whisper-models:

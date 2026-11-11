@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>A · Sala de control</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --panel:      #16181b;
+    --panel-hi:   #1e2126;
+    --chassis:    #0a0b0c;
+    --engrave:    #32373d;
+    --label:      #7d868f;
+    --read:       #e8eaec;
+    --amber:      #ffb01f;
+    --phosphor:   #58e06a;
+    --red:        #ff4438;
+    --socrates:   #ffb01f;
+    --glaucon:    #58e06a;
+    --russell:    #b98cff;
+    --whitehead:  #4ea8ff;
+    --wiki:       #8a939c;
+    --zenon:      #ff4438;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--chassis);
+    color: var(--read);
+    font: 14px/1.4 "IBM Plex Sans Condensed", sans-serif;
+    padding: 18px;
+    /* Machined-metal chassis: a faint vertical brush plus a warm pool of light
+       from the top left, so the panels read as objects sitting on something. */
+    background-image:
+      radial-gradient(900px 500px at 12% -10%, rgba(255,176,31,.05), transparent 60%),
+      repeating-linear-gradient(90deg, rgba(255,255,255,.012) 0 1px, transparent 1px 3px);
+  }
+
+  /* ---- chassis furniture ---- */
+  .rack {
+    background: linear-gradient(180deg, var(--panel-hi), var(--panel));
+    border: 1px solid #000;
+    border-top-color: #2a2e33;
+    border-radius: 3px;
+    box-shadow: 0 1px 0 rgba(255,255,255,.04) inset, 0 6px 18px rgba(0,0,0,.5);
+    padding: 12px 14px;
+  }
+
+  .engraved {
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--label);
+    /* Engraved into the panel: a dark line above, a light one below. */
+    text-shadow: 0 1px 0 rgba(255,255,255,.07);
+    margin-bottom: 9px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+  }
+  .engraved::after {
+    content: ""; flex: 1; height: 1px;
+    background: linear-gradient(90deg, var(--engrave), transparent);
+  }
+
+  .screw {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #4a5058, #16181b 70%);
+    box-shadow: 0 1px 0 rgba(255,255,255,.06);
+    position: relative;
+  }
+  .screw::after {
+    content: ""; position: absolute; inset: 2px 1px;
+    border-top: 1px solid #0a0b0c; transform: rotate(35deg);
+  }
+
+  header {
+    display: flex; align-items: center; gap: 16px;
+    margin-bottom: 14px; padding: 0 3px;
+  }
+  .plate {
+    font-weight: 700; font-size: 15px; letter-spacing: .1em;
+    text-transform: uppercase;
+  }
+  .plate span { color: var(--amber); }
+  .stamp {
+    font: 500 9.5px/1 "IBM Plex Mono", monospace;
+    letter-spacing: .12em; color: var(--label);
+    border: 1px solid var(--engrave); border-radius: 2px;
+    padding: 5px 8px;
+  }
+
+  /* ---- layout ---- */
+  .top { display: grid; grid-template-columns: 300px 1fr 250px; gap: 12px; margin-bottom: 12px; }
+  .mid { display: grid; grid-template-columns: 1fr 268px; gap: 12px; margin-bottom: 12px; }
+
+  /* ---- counters ---- */
+  .counter {
+    font: 700 34px/1 "IBM Plex Mono", monospace;
+    letter-spacing: -.02em;
+    color: var(--amber);
+    /* Phosphor bloom, the giveaway of a real seven-segment readout. */
+    text-shadow: 0 0 14px rgba(255,176,31,.45);
+    font-variant-numeric: tabular-nums;
+  }
+  .counter.small { font-size: 21px; }
+  .counter.green { color: var(--phosphor); text-shadow: 0 0 14px rgba(88,224,106,.4); }
+  .counter-row { display: flex; gap: 22px; align-items: flex-end; }
+  .unit { font: 500 10px/1 "IBM Plex Mono", monospace; color: var(--label); letter-spacing: .1em; }
+
+  /* ---- buttons ---- */
+  .keys { display: flex; gap: 7px; flex-wrap: wrap; }
+  .key {
+    font: 600 11px/1 "IBM Plex Sans Condensed", sans-serif;
+    letter-spacing: .09em; text-transform: uppercase;
+    color: var(--read);
+    background: linear-gradient(180deg, #2b3036, #1c2025);
+    border: 1px solid #000; border-top-color: #3d444c;
+    border-radius: 2px; padding: 9px 13px; cursor: pointer;
+    box-shadow: 0 2px 0 #000, 0 3px 6px rgba(0,0,0,.5);
+    display: flex; align-items: center; gap: 7px;
+  }
+  .key:active { transform: translateY(2px); box-shadow: 0 0 0 #000; }
+  .key kbd {
+    font: 500 9px/1 "IBM Plex Mono", monospace;
+    background: #0d0f11; border: 1px solid var(--engrave);
+    border-radius: 2px; padding: 2px 4px; color: var(--label);
+  }
+  .key.armed {
+    background: linear-gradient(180deg, #5e1710, #3a0e0a);
+    border-top-color: #8a2a20; color: #ffd9d4;
+  }
+  .key.armed .lamp {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--red); box-shadow: 0 0 9px var(--red);
+    animation: blink 1.1s steps(1) infinite;
+  }
+  @keyframes blink { 50% { opacity: .25; } }
+  .key.go { background: linear-gradient(180deg, #1d4a26, #123018); border-top-color: #2e7a3c; color: #d6ffdd; }
+
+  /* ---- VU meter ---- */
+  .vu { display: flex; align-items: center; gap: 11px; }
+  .ladder { display: flex; gap: 2px; align-items: flex-end; height: 42px; }
+  .ladder i {
+    width: 5px; border-radius: 1px; display: block;
+    background: #1f2429; box-shadow: 0 0 0 1px #000 inset;
+  }
+  .ladder i.on  { background: var(--phosphor); box-shadow: 0 0 6px rgba(88,224,106,.6); }
+  .ladder i.hot { background: var(--amber);    box-shadow: 0 0 6px rgba(255,176,31,.6); }
+  .ladder i.clip{ background: var(--red);      box-shadow: 0 0 8px rgba(255,68,56,.8); }
+  .scale {
+    display: flex; justify-content: space-between;
+    font: 500 8px/1 "IBM Plex Mono", monospace; color: var(--label);
+    letter-spacing: .06em; margin-top: 5px;
+  }
+
+  /* ---- tape counter timeline ---- */
+  .tape {
+    position: relative; height: 74px;
+    background:
+      linear-gradient(180deg, #0c0e10, #121417);
+    border: 1px solid #000; border-radius: 2px;
+    box-shadow: 0 1px 0 rgba(255,255,255,.04) inset;
+    overflow: hidden;
+  }
+  .tick { position: absolute; bottom: 0; width: 1px; background: var(--engrave); }
+  .tick.major { height: 13px; }
+  .tick.minor { height: 7px; opacity: .55; }
+  .tape-num {
+    position: absolute; bottom: 15px; transform: translateX(-50%);
+    font: 500 8.5px/1 "IBM Plex Mono", monospace; color: var(--label);
+  }
+  .sect {
+    position: absolute; top: 0; bottom: 26px;
+    border-left: 1px solid rgba(255,176,31,.28);
+    padding-left: 5px; font-size: 9px; color: #9aa3ac;
+    white-space: nowrap; overflow: hidden; max-width: 130px;
+    text-transform: uppercase; letter-spacing: .06em;
+  }
+  .cue {
+    position: absolute; top: 26px; width: 3px; height: 26px;
+    border-radius: 1px; transform: translateX(-1.5px);
+  }
+  .cue::after {
+    content: attr(data-n); position: absolute; top: -12px; left: -1px;
+    font: 600 8px/1 "IBM Plex Mono", monospace; color: inherit;
+  }
+  .play-head {
+    position: absolute; top: 0; bottom: 0; width: 1px; background: #fff;
+    box-shadow: 0 0 10px rgba(255,255,255,.85), 0 0 26px rgba(255,255,255,.35);
+  }
+  .play-head::before {
+    content: ""; position: absolute; top: 0; left: -4px;
+    border-left: 4.5px solid transparent; border-right: 4.5px solid transparent;
+    border-top: 6px solid #fff;
+  }
+  .elapsed { position: absolute; top: 0; bottom: 0; left: 0; background: rgba(255,176,31,.055); }
+
+  /* ---- teleprompter ---- */
+  .prompt {
+    height: 252px; overflow: hidden; position: relative;
+    font-family: "IBM Plex Sans Condensed", sans-serif;
+    font-size: 19px; line-height: 1.5;
+    mask-image: linear-gradient(180deg, transparent, #000 14%, #000 76%, transparent);
+  }
+  .prompt .l { padding: 2px 12px; color: #616a73; white-space: pre-wrap; }
+  .prompt .l.past { color: #3c434a; }
+  .prompt .l.now {
+    color: #fff;
+    /* The live line gets a lit strip, like a cursor on a hardware display. */
+    background: linear-gradient(90deg, rgba(255,176,31,.16), transparent 72%);
+    box-shadow: inset 2px 0 0 var(--amber);
+  }
+  .sigil {
+    display: inline-block; font: 700 9.5px/1 "IBM Plex Mono", monospace;
+    padding: 3px 6px; border-radius: 2px; color: #0a0b0c;
+    margin-right: 8px; vertical-align: 2px; letter-spacing: .05em;
+  }
+
+  /* ---- cue rack ---- */
+  .cue-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 5px 7px; font-size: 12px;
+    border-bottom: 1px solid #101215;
+  }
+  .cue-row .dot { width: 8px; height: 8px; border-radius: 1px; }
+  .cue-row .t { margin-left: auto; font: 500 10px/1 "IBM Plex Mono", monospace; color: var(--label); }
+  .cue-row.done { color: #555d65; }
+  .cue-row.live { background: rgba(88,224,106,.09); box-shadow: inset 2px 0 0 var(--phosphor); }
+
+  /* ---- editor strip ---- */
+  .track { display: flex; align-items: stretch; gap: 8px; margin-bottom: 7px; }
+  .track-name {
+    width: 96px; flex-shrink: 0;
+    font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--label); display: flex; align-items: center;
+  }
+  .lane {
+    flex: 1; height: 54px; background: #0c0e10;
+    border: 1px solid #000; border-radius: 2px; position: relative; overflow: hidden;
+  }
+  .block {
+    position: absolute; top: 4px; bottom: 4px; border-radius: 2px;
+    background: linear-gradient(180deg, #2d3840, #1d262c);
+    border: 1px solid #000; border-top-color: #435058;
+    display: flex; align-items: center; padding: 0 8px;
+    font: 500 10px/1 "IBM Plex Mono", monospace; color: #a9b3bb;
+    overflow: hidden;
+  }
+  .block.sel { border-top-color: var(--amber); box-shadow: 0 0 0 1px var(--amber) inset; color: var(--amber); }
+  .wave { position: absolute; inset: 0; display: flex; align-items: center; gap: 1px; padding: 0 3px; opacity: .5; }
+  .wave b { flex: 1; background: #6f8290; border-radius: .5px; }
+  .qblock {
+    position: absolute; top: 8px; bottom: 8px; border-radius: 2px;
+    display: flex; align-items: center; padding: 0 5px;
+    font: 600 9px/1 "IBM Plex Mono", monospace; color: #0a0b0c;
+  }
+  .cut {
+    position: absolute; top: 0; bottom: 0;
+    background: repeating-linear-gradient(45deg, rgba(255,68,56,.22) 0 5px, transparent 5px 10px);
+    border-left: 1px solid var(--red); border-right: 1px solid var(--red);
+  }
+  .note { font-size: 11px; color: var(--label); margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="screw"></div>
+  <div class="plate">ESTUDIO DE <span>LECTURAS</span></div>
+  <div class="stamp">ME01 · LECTURA 07</div>
+  <div class="stamp">PLATÓN II</div>
+  <div style="flex:1"></div>
+  <div class="stamp" style="color:var(--phosphor);border-color:#1d4a26">ENLAZADO</div>
+  <div class="screw"></div>
+</header>
+
+<div class="top">
+  <div class="rack">
+    <div class="engraved">Cronómetro</div>
+    <div class="counter-row">
+      <div>
+        <div class="counter">08:42</div>
+        <div class="unit">TRANSCURRIDO</div>
+      </div>
+      <div>
+        <div class="counter small green">22:51</div>
+        <div class="unit">PROYECCIÓN</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="rack">
+    <div class="engraved">Transporte</div>
+    <div class="keys">
+      <div class="key armed"><span class="lamp"></span>GRABANDO<kbd>R</kbd></div>
+      <div class="key">PARAR<kbd>S</kbd></div>
+      <div class="key go">CITA 07<kbd>N</kbd></div>
+      <div class="key">LÁMINA<kbd>L</kbd></div>
+      <div class="key">FLECHA<kbd>A</kbd></div>
+      <div class="key">◂<kbd>↓</kbd></div>
+      <div class="key">▸<kbd>↑</kbd></div>
+    </div>
+  </div>
+
+  <div class="rack">
+    <div class="engraved">Micrófono</div>
+    <div class="vu">
+      <div>
+        <div class="ladder" id="ladder"></div>
+        <div class="scale"><span>−40</span><span>−24</span><span>−12</span><span>−6</span><span>0</span></div>
+      </div>
+      <div>
+        <div class="counter small">−14</div>
+        <div class="unit">dB</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="rack" style="margin-bottom:12px">
+  <div class="engraved">Posición en la lectura</div>
+  <div class="tape" id="tape"></div>
+</div>
+
+<div class="mid">
+  <div class="rack">
+    <div class="engraved">Guion</div>
+    <div class="prompt">
+      <div class="l past">Sócrates describe la caverna a Glaucón, el hermano</div>
+      <div class="l past">mayor de Platón, que también fue estudiante de Sócrates.</div>
+      <div class="l past">Este escenario, así como el reparto de personajes,</div>
+      <div class="l past">subrayan la importancia central de la caverna.</div>
+      <div class="l now">     Así lo introduce:</div>
+      <div class="l"><span class="sigil" style="background:var(--socrates)">▶ N · SÓCRATES</span>Y ahora, dije, déjame mostrar en una figura</div>
+      <div class="l">   hasta dónde está iluminada u oscura nuestra naturaleza:</div>
+      <div class="l">   ¡Aquí está! Seres humanos que viven en una guarida</div>
+      <div class="l">   subterránea, que tiene una boca abierta hacia la luz</div>
+      <div class="l">   y que alcanza todo lo largo de la guarida; han estado</div>
+      <div class="l">   ahí desde niños, y tienen encadenadas las piernas</div>
+    </div>
+  </div>
+
+  <div class="rack">
+    <div class="engraved">Citas <span style="color:var(--amber);margin-left:auto">06/19</span></div>
+    <div style="max-height:252px;overflow:auto;margin:0 -7px">
+      <div class="cue-row done"><span class="dot" style="background:var(--whitehead)"></span>01 Whitehead<span class="t">7.9</span></div>
+      <div class="cue-row done"><span class="dot" style="background:var(--socrates)"></span>02 Sócrates<span class="t">46.5</span></div>
+      <div class="cue-row done"><span class="dot" style="background:var(--glaucon)"></span>03 Glaucón<span class="t">1.0</span></div>
+      <div class="cue-row done"><span class="dot" style="background:var(--socrates)"></span>04 Sócrates<span class="t">15.2</span></div>
+      <div class="cue-row done"><span class="dot" style="background:var(--glaucon)"></span>05 Glaucón<span class="t">4.3</span></div>
+      <div class="cue-row done"><span class="dot" style="background:var(--socrates)"></span>06 Sócrates<span class="t">1.1</span></div>
+      <div class="cue-row live"><span class="dot" style="background:var(--russell)"></span>07 Russell<span class="t">29.7</span></div>
+      <div class="cue-row"><span class="dot" style="background:var(--zenon)"></span>08 Zenón<span class="t">0.8</span></div>
+      <div class="cue-row"><span class="dot" style="background:var(--russell)"></span>09 Russell<span class="t">20.7</span></div>
+      <div class="cue-row"><span class="dot" style="background:var(--wiki)"></span>10 Wikipedia<span class="t">14.3</span></div>
+      <div class="cue-row"><span class="dot" style="background:var(--socrates)"></span>11 Sócrates<span class="t">18.5</span></div>
+      <div class="cue-row"><span class="dot" style="background:var(--glaucon)"></span>12 Glaucón<span class="t">1.4</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="rack">
+  <div class="engraved">Montaje <span style="margin-left:auto;color:var(--label);font-family:'IBM Plex Mono'">7 TOMAS · 24:18 TRAS CORTES</span></div>
+
+  <div class="track">
+    <div class="track-name">Voz</div>
+    <div class="lane" id="voice"></div>
+  </div>
+  <div class="track">
+    <div class="track-name">Citas</div>
+    <div class="lane" id="quotes"></div>
+  </div>
+
+  <div class="note">Arrastra un bloque para reordenar · doble clic para separar · la zona rayada se descarta al montar</div>
+</div>
+
+<script>
+// --- meter ---
+const ladder = document.getElementById('ladder');
+for (let i = 0; i < 26; i++) {
+  const bar = document.createElement('i');
+  bar.style.height = `${14 + i * 1.1}px`;
+  ladder.appendChild(bar);
+}
+function meter() {
+  const level = 17 + Math.round(Math.sin(Date.now() / 420) * 4 + Math.random() * 4);
+  [...ladder.children].forEach((bar, i) => {
+    bar.className = i < level ? (i > 23 ? 'clip' : i > 20 ? 'hot' : 'on') : '';
+  });
+}
+setInterval(meter, 90); meter();
+
+// --- tape counter ---
+const SECTIONS = [
+  ['Platón II', 0], ['Alegoría de la caverna', 7.2], ['Visión de la eternidad', 20.6],
+  ['El ideal', 38.4], ['Liberación', 48.6], ['Deshaciendo la proyección', 57.6],
+  ['El regreso a la ingenuidad', 65.1], ['Dos tipos de astronomía', 75.4],
+];
+const CUES = [
+  [4.8, 'whitehead', '01'], [9.1, 'socrates', '02'], [11.0, 'glaucon', '03'],
+  [11.2, 'socrates', '04'], [11.9, 'glaucon', '05'], [12.3, 'socrates', '06'],
+  [24.0, 'russell', '07'], [29.1, 'zenon', '08'], [31.5, 'russell', '09'],
+  [42.5, 'wiki', '10'], [46.3, 'socrates', '11'], [48.1, 'glaucon', '12'],
+  [62.0, 'socrates', '15'], [63.4, 'glaucon', '16'], [65.2, 'socrates', '19'],
+];
+const tape = document.getElementById('tape');
+tape.insertAdjacentHTML('beforeend', '<div class="elapsed" style="width:38%"></div>');
+for (let p = 0; p <= 100; p += 2.5) {
+  tape.insertAdjacentHTML('beforeend',
+    `<div class="tick ${p % 10 === 0 ? 'major' : 'minor'}" style="left:${p}%"></div>`);
+  if (p % 10 === 0) {
+    tape.insertAdjacentHTML('beforeend',
+      `<div class="tape-num" style="left:${p}%">${String(Math.round(p * 0.24)).padStart(2, '0')}:00</div>`);
+  }
+}
+SECTIONS.forEach(([name, pos], i) => {
+  tape.insertAdjacentHTML('beforeend',
+    `<div class="sect" style="left:${pos}%;padding-top:${i % 2 ? 15 : 3}px">${name}</div>`);
+});
+CUES.forEach(([pos, who, n]) => {
+  tape.insertAdjacentHTML('beforeend',
+    `<div class="cue" data-n="${n}" style="left:${pos}%;background:var(--${who});color:var(--${who})"></div>`);
+});
+tape.insertAdjacentHTML('beforeend', '<div class="play-head" style="left:38%"></div>');
+
+// --- editor lanes ---
+const voice = document.getElementById('voice');
+let x = 0;
+[['toma-1', 14], ['toma-2', 11], ['toma-3', 9], ['toma-4', 17], ['toma-5', 13], ['toma-6', 12], ['toma-7', 20]]
+  .forEach(([name, w], i) => {
+    const wave = Array.from({ length: Math.round(w * 2.4) },
+      () => `<b style="height:${8 + Math.random() * 34}px"></b>`).join('');
+    voice.insertAdjacentHTML('beforeend',
+      `<div class="block ${i === 3 ? 'sel' : ''}" style="left:${x}%;width:${w - 0.4}%">
+         <div class="wave">${wave}</div>
+         <span style="position:relative">${name}</span>
+       </div>`);
+    x += w;
+  });
+voice.insertAdjacentHTML('beforeend', '<div class="cut" style="left:49%;width:3.5%"></div>');
+
+const quotes = document.getElementById('quotes');
+[[5, 3, 'whitehead', '01'], [10, 7, 'socrates', '02'], [18, 2, 'glaucon', '03'],
+ [26, 5, 'russell', '07'], [44, 3, 'wiki', '10'], [58, 6, 'socrates', '15'], [78, 4, 'socrates', '19']]
+  .forEach(([left, w, who, n]) => {
+    quotes.insertAdjacentHTML('beforeend',
+      `<div class="qblock" style="left:${left}%;width:${w}%;background:var(--${who})">${n}</div>`);
+  });
+</script>
+</body>
+</html>

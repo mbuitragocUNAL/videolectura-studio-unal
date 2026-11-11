@@ -1,0 +1,55 @@
+# Lectura 22: Belleza cuántica II: exuberancia
+# Escrito por la consola de preparación del estudio. Se puede editar a mano;
+# después:  ./estudio preparar lecturas/22-belleza-cuantica-ii-exuberancia
+
+[lectura]
+curso = "ME"                       # ME (Modelos estocásticos) o LP (Lenguajes de programación)
+grupo = 1                          # dígito del grupo en el SIA
+libro = "../../libros/Wilczek Frank - El Mundo Como Obra De Arte.pdf"
+numero = 22
+paginas = "207-218"                # páginas del PDF, no las impresas. Ej.: "61-72" o "61-72, 446"
+titulo = "Belleza cuántica II: exuberancia"
+
+[pantalla]
+ancho_figura = 0.38                # parte de la pantalla para la figura fija a la derecha (2.f)
+dpi = 200
+segundos_figura = 2                # cuánto se deja una figura sin pie (2.e)
+
+[figuras]
+detectar = true
+persistente = true                 # 2.f: fija la figura a la derecha en los párrafos que hablan de ella
+
+[[fija]]
+desde = "Los otros cuatro deben hacer uso"
+figura = "Figura 26"
+hasta = "beneficiarse de la atracción de los dos núcleos"
+
+[[fija]]
+desde = "A la izquierda tenemos la unidad"
+figura = "Figura 27"
+hasta = "que exploraremos ahora"
+
+[[fija]]
+desde = "El grafeno, la versión del grafito"
+figura = "Figura 29"
+hasta = "nadie ha intentado hacer ese experimento todavía"
+
+[[fija]]
+desde = "Las bolas de carbono puro"
+figura = "Figura 30"
+hasta = "hollín común de una vela"
+
+[[cita]]
+personaje = "Electrón"
+texto = "Me pareces atractivo, pero necesito mi espacio"
+
+[voces."Electrón"]
+descripcion = "hombre, "
+motor = "elevenlabs"               # elevenlabs, qwen (en el computador) o manual (audio propio)
+voz = "EXAVITQu4vr4xnSDxMaL"       # id de la voz: de ElevenLabs, o la carpeta en voces/qwen/
+voz_nombre = "Sarah - Mature, Reassuring, Confident"
+
+[musica]
+archivo = "Bossa Antigua.mp3"
+nivel = 14
+atenuar = true

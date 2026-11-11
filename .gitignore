@@ -1,0 +1,40 @@
+# Generated per reading by preparar/lector.py; lectura.toml is the only source.
+lecturas/*/paginas/
+lecturas/*/figuras/
+lecturas/*/audio/
+lecturas/*/estudio/
+lecturas/*/marcas.json
+lecturas/*/tira.json
+lecturas/*/guion.txt
+lecturas/*/tipografia/
+lecturas/*/tipografia.json
+# Book PDFs are copyrighted: each person keeps their own.
+*.pdf
+libros/
+# Designed voices and the ElevenLabs key: each person keeps their own.
+voces/
+# Background music is licensed to whoever downloaded it.
+musica/
+preparar/.venv/
+__pycache__/
+data/
+frontend/node_modules/
+frontend/.nuxt/
+frontend/.output/
+frontend/dist/
+frontend/.pnpm-store/
+# The guide video: its media is regenerated (narrar.py, capturas.mjs) or is
+# licensed (the music, the lectura excerpts showing the book).
+guia/video/assets/
+guia/video/renders/
+guia/video/.hyperframes/
+guia/voz/
+guia/*.mp4
+guia/herramientas/node_modules/
+# The UNAL crest is the university's mark; each person adds it for their own
+# thumbnails (preparar/marca/README.md).
+preparar/marca/escudo-unal-blanco.png
+# The render output the studio serves its UI from.
+web/
+.DS_Store
+frontend/dist

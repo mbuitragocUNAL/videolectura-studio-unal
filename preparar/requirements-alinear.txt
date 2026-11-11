@@ -1,0 +1,3 @@
+# Para el estudio: transcribe las tomas y así pone cada figura en la palabra
+# que la nombra (preparar/alinear.py). No hace falta para preparar lecturas.
+faster-whisper>=1.1

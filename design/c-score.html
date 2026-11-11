@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>C · Partitura</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chivo+Mono:wght@300;400;500;600&family=Chivo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #0d0f12;
+    --stave:    #15181d;
+    --grid:     #1e232a;
+    --grid-hi:  #2b323b;
+    --fg:       #eef1f4;
+    --dim:      #79828d;
+    --faint:    #4a525c;
+    --signal:   #f5f749;   /* playhead: the only pure-bright thing on screen */
+    --socrates: #ff9f45;
+    --glaucon:  #45d98a;
+    --russell:  #a98bff;
+    --whitehead:#4fb0ff;
+    --wiki:     #8892a0;
+    --zenon:    #ff5470;
+    --cut:      #ff5470;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font: 400 13px/1.45 "Chivo", sans-serif;
+    padding: 0;
+    /* One hairline grid under everything: the score is ruled paper. */
+    background-image:
+      repeating-linear-gradient(90deg, rgba(255,255,255,.018) 0 1px, transparent 1px 64px);
+  }
+
+  .num { font-family: "Chivo Mono", monospace; font-variant-numeric: tabular-nums; }
+
+  /* ---- scope bar ---- */
+  .scope {
+    display: flex; align-items: center; gap: 22px;
+    padding: 13px 20px; border-bottom: 1px solid var(--grid);
+    background: rgba(13,15,18,.92); backdrop-filter: blur(8px);
+    position: sticky; top: 0; z-index: 20;
+  }
+  .id { font-weight: 600; letter-spacing: -.01em; }
+  .id b { color: var(--signal); font-weight: 600; }
+  .sep { width: 1px; height: 22px; background: var(--grid-hi); }
+
+  .zooms { display: flex; gap: 2px; }
+  .zoom {
+    font: 500 10.5px/1 "Chivo", sans-serif; letter-spacing: .07em; text-transform: uppercase;
+    color: var(--dim); background: none; border: none; cursor: pointer;
+    padding: 7px 12px; border-radius: 3px;
+  }
+  .zoom:hover { color: var(--fg); background: var(--stave); }
+  .zoom.on { color: var(--bg); background: var(--fg); font-weight: 600; }
+
+  .readout { display: flex; gap: 20px; margin-left: auto; align-items: baseline; }
+  .readout div { text-align: right; }
+  .readout .v { font: 500 19px/1 "Chivo Mono", monospace; }
+  .readout .k { font-size: 9px; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); }
+  .live { color: var(--zenon); }
+
+  /* ---- the score ---- */
+  .score { padding: 16px 20px 0; }
+
+  .system { position: relative; }
+
+  /* the one playhead that crosses every stave */
+  #head {
+    position: absolute; top: 0; bottom: 0; width: 1px;
+    background: var(--signal); z-index: 10; pointer-events: none;
+    box-shadow: 0 0 12px rgba(245,247,73,.55);
+  }
+  #head::before {
+    content: ""; position: absolute; top: -5px; left: -4px;
+    border-left: 4.5px solid transparent; border-right: 4.5px solid transparent;
+    border-top: 6px solid var(--signal);
+  }
+
+  .stave { display: flex; align-items: stretch; margin-bottom: 3px; }
+  .clef {
+    width: 104px; flex-shrink: 0; padding-right: 12px;
+    display: flex; flex-direction: column; justify-content: center;
+    border-right: 1px solid var(--grid);
+  }
+  .clef .name {
+    font: 600 9.5px/1.3 "Chivo", sans-serif;
+    letter-spacing: .13em; text-transform: uppercase; color: var(--dim);
+  }
+  .clef .meta { font: 400 9px/1.3 "Chivo Mono", monospace; color: var(--faint); margin-top: 3px; }
+
+  .lane { flex: 1; position: relative; background: var(--stave); border-radius: 2px; }
+  .lane.ruler   { height: 26px; background: none; }
+  .lane.section { height: 30px; }
+  .lane.take    { height: 62px; }
+  .lane.quote   { height: 34px; }
+  .lane.cue     { height: 22px; }
+
+  /* ruler */
+  .tick { position: absolute; top: 12px; bottom: 0; width: 1px; background: var(--grid-hi); }
+  .tick.maj { top: 7px; background: var(--faint); }
+  .tno {
+    position: absolute; top: 0; transform: translateX(-50%);
+    font: 400 9px/1 "Chivo Mono", monospace; color: var(--faint);
+  }
+
+  /* sections */
+  .sec {
+    position: absolute; top: 3px; bottom: 3px;
+    border-left: 2px solid var(--grid-hi); padding-left: 7px;
+    display: flex; align-items: center; overflow: hidden;
+    font-size: 10.5px; color: var(--dim); white-space: nowrap;
+  }
+  .sec.here { border-left-color: var(--signal); color: var(--fg); background: rgba(245,247,73,.05); }
+
+  /* takes */
+  .blk {
+    position: absolute; top: 5px; bottom: 5px; border-radius: 2px;
+    background: #1d232b; border: 1px solid #2a323c;
+    overflow: hidden; cursor: grab;
+  }
+  .blk:hover { border-color: var(--faint); }
+  .blk.on { border-color: var(--signal); background: #232a1f; }
+  .blk .wv { position: absolute; inset: 0; display: flex; align-items: center; gap: 1px; padding: 0 2px; }
+  .blk .wv b { flex: 1; background: #46525f; border-radius: .5px; }
+  .blk.on .wv b { background: #7f8a3d; }
+  .blk .tag {
+    position: absolute; left: 6px; top: 4px;
+    font: 500 9px/1 "Chivo Mono", monospace; color: var(--dim);
+    background: rgba(13,15,18,.7); padding: 2px 4px; border-radius: 2px;
+  }
+  .blk .grip {
+    position: absolute; top: 0; bottom: 0; width: 5px;
+    background: var(--grid-hi); cursor: ew-resize;
+  }
+  .blk .grip.l { left: 0; } .blk .grip.r { right: 0; }
+  .blk:hover .grip { background: var(--signal); }
+
+  .excised {
+    position: absolute; top: 5px; bottom: 5px; z-index: 5;
+    background: repeating-linear-gradient(45deg, rgba(255,84,112,.2) 0 4px, transparent 4px 8px);
+    border-left: 1px solid var(--cut); border-right: 1px solid var(--cut);
+  }
+
+  /* quotes */
+  .q {
+    position: absolute; top: 5px; bottom: 5px; border-radius: 2px;
+    display: flex; align-items: center; padding: 0 6px;
+    font: 600 9.5px/1 "Chivo Mono", monospace; color: #0d0f12;
+    overflow: hidden; white-space: nowrap;
+  }
+
+  /* cue marks */
+  .cm { position: absolute; top: 4px; width: 2px; height: 14px; border-radius: 1px; }
+  .cm::after {
+    content: attr(data-n); position: absolute; top: 15px; left: -4px;
+    font: 500 8px/1 "Chivo Mono", monospace; color: inherit;
+  }
+
+  /* ---- detail pane, locked to the playhead ---- */
+  .detail {
+    display: grid; grid-template-columns: 1fr 300px; gap: 20px;
+    padding: 18px 20px 24px; margin-top: 12px;
+    border-top: 1px solid var(--grid);
+  }
+  .prompter { font-size: 17px; line-height: 1.62; }
+  .prompter p { color: var(--faint); white-space: pre-wrap; transition: color .2s; }
+  .prompter p.now { color: var(--fg); }
+  .prompter p.soon { color: var(--dim); }
+  .badge {
+    display: inline-block; font: 600 9.5px/1 "Chivo Mono", monospace;
+    padding: 3px 6px; border-radius: 2px; color: #0d0f12; margin-right: 8px;
+  }
+
+  .ctrl { display: flex; flex-direction: column; gap: 14px; }
+  .keys { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+  .k {
+    font: 500 11px/1 "Chivo", sans-serif; color: var(--fg);
+    background: var(--stave); border: 1px solid var(--grid-hi);
+    border-radius: 3px; padding: 10px; cursor: pointer;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .k:hover { border-color: var(--faint); }
+  .k span { font: 400 9px/1 "Chivo Mono", monospace; color: var(--faint); }
+  .k.rec { background: #2a1219; border-color: #5c2231; color: #ffb3c0; grid-column: 1 / -1; }
+  .k.go { background: #1a2a1f; border-color: #2c5539; color: #a8f0c4; grid-column: 1 / -1; }
+
+  .meter { height: 4px; background: var(--grid); border-radius: 2px; overflow: hidden; }
+  .meter b { display: block; height: 100%; background: var(--glaucon); }
+  .mrow { display: flex; justify-content: space-between; font: 400 9px/1 "Chivo Mono", monospace; color: var(--faint); margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<div class="scope">
+  <div class="id">ME01 · Lectura <b>07</b></div>
+  <div class="sep"></div>
+  <div class="zooms">
+    <button class="zoom on">Lectura</button>
+    <button class="zoom">Toma</button>
+    <button class="zoom">Montaje</button>
+    <button class="zoom">Render</button>
+  </div>
+  <div class="readout">
+    <div><div class="v live">● 04:11</div><div class="k">toma 4</div></div>
+    <div><div class="v">08:42</div><div class="k">transcurrido</div></div>
+    <div><div class="v">22:51</div><div class="k">proyección</div></div>
+    <div><div class="v">06/19</div><div class="k">citas</div></div>
+  </div>
+</div>
+
+<div class="score">
+  <div class="system" id="system">
+    <div id="head" style="left:calc(104px + 38% * (100% - 104px) / 100%)"></div>
+
+    <div class="stave">
+      <div class="clef"></div>
+      <div class="lane ruler" id="ruler"></div>
+    </div>
+
+    <div class="stave">
+      <div class="clef"><div class="name">Secciones</div><div class="meta">8</div></div>
+      <div class="lane section" id="sections"></div>
+    </div>
+
+    <div class="stave">
+      <div class="clef"><div class="name">Voz</div><div class="meta">7 tomas · 24:18</div></div>
+      <div class="lane take" id="takes"></div>
+    </div>
+
+    <div class="stave">
+      <div class="clef"><div class="name">Citas</div><div class="meta">19 · 04:19</div></div>
+      <div class="lane quote" id="quotes"></div>
+    </div>
+
+    <div class="stave">
+      <div class="clef"><div class="name">Marcas</div><div class="meta">disparos</div></div>
+      <div class="lane cue" id="cues"></div>
+    </div>
+  </div>
+</div>
+
+<div class="detail">
+  <div class="prompter">
+    <p>Sócrates describe la caverna a Glaucón, el hermano mayor de Platón,</p>
+    <p>que también fue estudiante de Sócrates. Este escenario, así como el</p>
+    <p>reparto de personajes, subrayan la importancia central de la caverna.</p>
+    <p class="now">     Así lo introduce:</p>
+    <p class="soon"><span class="badge" style="background:var(--socrates)">N · SÓCRATES</span></p>
+    <p class="soon">Y ahora, dije, déjame mostrar en una figura hasta dónde está</p>
+    <p class="soon">iluminada u oscura nuestra naturaleza: ¡Aquí está! Seres humanos</p>
+    <p>que viven en una guarida subterránea, que tiene una boca abierta</p>
+  </div>
+
+  <div class="ctrl">
+    <div class="keys">
+      <button class="k go">Sonar la cita 07 · Russell<span>N</span></button>
+      <button class="k rec">Detener la toma<span>S</span></button>
+      <button class="k">Repetir<span>P</span></button>
+      <button class="k">Lámina<span>L</span></button>
+      <button class="k">Flecha<span>A</span></button>
+      <button class="k">Montar<span>M</span></button>
+    </div>
+    <div>
+      <div class="meter"><b style="width:62%"></b></div>
+      <div class="mrow"><span>−40</span><span>−14 dB</span><span>0</span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SECTIONS = [
+  ['Platón II', 0, 7.2], ['Alegoría de la caverna', 7.2, 13.4], ['Visión de la eternidad', 20.6, 17.8],
+  ['El ideal', 38.4, 10.2], ['Liberación', 48.6, 9], ['Deshaciendo la proyección', 57.6, 7.5],
+  ['El regreso a la ingenuidad', 65.1, 10.3], ['Dos tipos de astronomía', 75.4, 24.6],
+];
+const CUES = [
+  [4.8, 'whitehead', '01'], [9.1, 'socrates', '02'], [11.0, 'glaucon', '03'],
+  [11.2, 'socrates', '04'], [11.9, 'glaucon', '05'], [12.3, 'socrates', '06'],
+  [24.0, 'russell', '07'], [29.1, 'zenon', '08'], [31.5, 'russell', '09'],
+  [42.5, 'wiki', '10'], [46.3, 'socrates', '11'], [48.1, 'glaucon', '12'],
+  [62.0, 'socrates', '15'], [63.4, 'glaucon', '16'], [65.2, 'socrates', '19'],
+];
+
+const ruler = document.getElementById('ruler');
+for (let p = 0; p <= 100; p += 2.5) {
+  ruler.insertAdjacentHTML('beforeend', `<div class="tick ${p % 10 === 0 ? 'maj' : ''}" style="left:${p}%"></div>`);
+  if (p % 10 === 0) {
+    ruler.insertAdjacentHTML('beforeend',
+      `<div class="tno" style="left:${p}%">${String(Math.round(p * 0.24)).padStart(2, '0')}:00</div>`);
+  }
+}
+
+const sections = document.getElementById('sections');
+SECTIONS.forEach(([t, p, w], i) => {
+  sections.insertAdjacentHTML('beforeend',
+    `<div class="sec ${i === 1 ? 'here' : ''}" style="left:${p}%;width:${w}%">${t}</div>`);
+});
+
+const takes = document.getElementById('takes');
+let x = 0;
+[['t1', 14], ['t2', 11], ['t3', 9], ['t4', 17], ['t5', 13], ['t6', 12], ['t7', 20]]
+  .forEach(([name, w], i) => {
+    const wv = Array.from({ length: Math.round(w * 3) },
+      () => `<b style="height:${6 + Math.random() * 40}px"></b>`).join('');
+    takes.insertAdjacentHTML('beforeend',
+      `<div class="blk ${i === 3 ? 'on' : ''}" style="left:${x}%;width:${w - 0.3}%">
+         <div class="wv">${wv}</div><span class="tag">${name}</span>
+         <div class="grip l"></div><div class="grip r"></div>
+       </div>`);
+    x += w;
+  });
+takes.insertAdjacentHTML('beforeend', '<div class="excised" style="left:49%;width:3.5%"></div>');
+
+const quotes = document.getElementById('quotes');
+[[4.8, 2.4, 'whitehead', '01'], [9.1, 6.2, 'socrates', '02'], [24.0, 4.3, 'russell', '07'],
+ [31.5, 3, 'russell', '09'], [42.5, 2.1, 'wiki', '10'], [46.3, 2.7, 'socrates', '11'],
+ [62.0, 3.9, 'socrates', '15'], [65.2, 2, 'socrates', '19']]
+  .forEach(([l, w, who, n]) => {
+    quotes.insertAdjacentHTML('beforeend',
+      `<div class="q" style="left:${l}%;width:${w}%;background:var(--${who})">${n}</div>`);
+  });
+
+const cues = document.getElementById('cues');
+CUES.forEach(([p, who, n]) => {
+  cues.insertAdjacentHTML('beforeend',
+    `<div class="cm" data-n="${n}" style="left:${p}%;background:var(--${who});color:var(--${who})"></div>`);
+});
+
+// The playhead is positioned against the lanes, which start after the clef.
+const CLEF = 104, GAP = 0;
+function place() {
+  const lane = document.getElementById('ruler').getBoundingClientRect();
+  const sys = document.getElementById('system').getBoundingClientRect();
+  document.getElementById('head').style.left = `${lane.left - sys.left + lane.width * 0.38}px`;
+}
+place();
+window.addEventListener('resize', place);
+</script>
+</body>
+</html>

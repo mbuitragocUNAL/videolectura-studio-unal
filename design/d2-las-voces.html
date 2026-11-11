@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>2 · Las voces</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&family=Cardo:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Sans:wght@400;500&family=Libre+Baskerville:ital,wght@0,400;1,400&family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --stage:     #100f0d;   /* warm near-black */
+    --stage-2:   #16150f;
+    --rule:      #2b2822;
+    --label:     #8d867a;
+    --faint:     #5a544b;
+    /* colour temperature, not hue */
+    --socrates:  #d9a24a;   /* candle */
+    --glaucon:   #ddd08a;   /* cooler straw */
+    --russell:   #93a8bd;   /* daylight */
+    --whitehead: #c08a4e;   /* dark amber */
+    --wiki:      #e8e6e1;   /* neutral 5000 K */
+    --zenon:     #e04a3a;   /* hard flash */
+    --you:       #efe7d8;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--stage); color: var(--you);
+    font: 400 13px/1.5 "Literata", Georgia, serif;
+    height: 100vh; overflow: hidden;
+    display: grid; grid-template-rows: auto 1fr auto;
+  }
+  .lbl {
+    font: 500 9.5px/1 "IBM Plex Sans", sans-serif;
+    letter-spacing: .13em; text-transform: uppercase; color: var(--label);
+  }
+
+  /* ---- bar ---- */
+  .bar { display: flex; align-items: center; gap: 20px; padding: 12px 22px; }
+  .bar .t { font: 400 15px/1 "Literata", serif; font-variant-numeric: tabular-nums; }
+  .rec { display: flex; align-items: center; gap: 8px; color: var(--zenon); }
+  .rec i { width: 7px; height: 7px; border-radius: 50%; background: var(--zenon); animation: b 1.3s steps(1) infinite; }
+  @keyframes b { 50% { opacity: .25; } }
+
+  /* ---- the stage ---- */
+  .stage {
+    position: relative; display: grid; place-items: center;
+    padding: 10px 40px 0;
+  }
+
+  /* you, in the centre */
+  .you {
+    width: 620px; max-width: 100%; position: relative;
+    transition: opacity .4s ease, filter .4s ease;
+  }
+  .you.dark { opacity: .16; filter: blur(.4px); }
+  .you p {
+    font: 300 25px/1.55 "Literata", Georgia, serif;
+    color: #6e675c; white-space: pre-wrap; transition: color .3s;
+  }
+  .you p.now { color: var(--you); font-weight: 400; }
+
+  /* the ring of light around your place: it breathes with the microphone,
+     and while you hold a silence it counts that silence down */
+  .halo {
+    position: absolute; left: 50%; top: 50%;
+    width: 560px; height: 560px; margin: -280px 0 0 -280px;
+    border-radius: 50%; pointer-events: none;
+    background: radial-gradient(circle, rgba(239,231,216,.055), transparent 62%);
+  }
+  .halo svg { position: absolute; inset: 0; transform: rotate(-90deg); }
+  .halo circle { fill: none; stroke-width: 1.5; }
+  .halo .track { stroke: rgba(239,231,216,.10); }
+  .halo .hold  { stroke: var(--socrates); stroke-dasharray: 1758; stroke-dashoffset: 1758; transition: stroke-dashoffset .1s linear; }
+
+  /* the cast, around you */
+  .who {
+    position: absolute; text-align: center; width: 320px;
+    opacity: .2; transition: opacity .45s ease;
+  }
+  .who.lit { opacity: 1; }
+  .who .name {
+    font: 500 9.5px/1 "IBM Plex Sans", sans-serif;
+    letter-spacing: .16em; text-transform: uppercase; margin-bottom: 9px;
+  }
+  .who .said { font-size: 19px; line-height: 1.5; }
+  /* casting by typeface */
+  .who[data-v="socrates"]  .said { font: 400 21px/1.5 "Cardo", serif; color: var(--socrates); }
+  .who[data-v="glaucon"]   .said { font: 400 20px/1.5 "Cardo", serif; color: var(--glaucon); }
+  .who[data-v="whitehead"] .said { font: 700 19px/1.5 "Cardo", serif; color: var(--whitehead); }
+  .who[data-v="russell"]   .said { font: 400 18px/1.55 "Libre Baskerville", serif; color: var(--russell); }
+  .who[data-v="wiki"]      .said { font: 400 17px/1.55 "IBM Plex Sans", sans-serif; color: var(--wiki); }
+  .who[data-v="zenon"]     .said { font: 800 34px/1 "Bricolage Grotesque", sans-serif; color: var(--zenon); }
+  .who .said u { text-decoration: none; border-bottom: 1.5px solid currentColor; }
+
+  .p-nw { left: 3%;  top: 10%; text-align: left; }
+  .p-ne { right: 3%; top: 10%; text-align: right; }
+  .p-w  { left: 3%;  top: 46%; text-align: left; }
+  .p-e  { right: 3%; top: 46%; text-align: right; }
+  .p-sw { left: 3%;  bottom: 8%; text-align: left; }
+  .p-se { right: 3%; bottom: 8%; text-align: right; }
+
+  /* ---- the script in lanes ---- */
+  .script { padding: 0 22px 16px; }
+  .lane { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
+  .lane .nm { width: 86px; text-align: right; flex-shrink: 0; }
+  .lane .trk {
+    flex: 1; height: 34px; position: relative;
+    background: var(--stage-2); border-radius: 2px;
+  }
+  .lane.mine .trk { height: 48px; }
+  .clip {
+    position: absolute; top: 5px; bottom: 5px; border-radius: 2px;
+    display: flex; align-items: center; justify-content: center;
+    font: 500 9px/1 "IBM Plex Sans", sans-serif; color: #100f0d;
+  }
+  .tk {
+    position: absolute; top: 5px; bottom: 5px; border-radius: 2px;
+    background: #23211b; border: 1px solid #332f27; overflow: hidden;
+  }
+  .tk.on { border-color: var(--socrates); }
+  .tk .wv { position: absolute; inset: 0; display: flex; align-items: center; gap: 1px; padding: 0 2px; }
+  .tk .wv b { flex: 1; background: #5f5849; border-radius: .5px; }
+  .tk.on .wv b { background: var(--socrates); }
+  .tk .nm2 { position: absolute; left: 5px; top: 3px; font: 500 8px/1 "IBM Plex Sans", sans-serif; color: var(--faint); }
+  .silence {
+    position: absolute; top: 0; bottom: 0;
+    background: rgba(239,231,216,.07);
+    border-left: 1px dashed rgba(239,231,216,.3); border-right: 1px dashed rgba(239,231,216,.3);
+  }
+  .silence::after {
+    content: "empalmar aquí"; position: absolute; top: -13px; left: 50%; transform: translateX(-50%);
+    font: 500 8px/1 "IBM Plex Sans", sans-serif; letter-spacing: .08em; color: var(--label); white-space: nowrap;
+  }
+  .foot { display: flex; align-items: center; gap: 18px; padding: 10px 22px 16px; border-top: 1px solid var(--rule); }
+  .k {
+    font: 400 12px/1 "Literata", serif; color: var(--you);
+    background: none; border: none; cursor: pointer; padding: 6px 0;
+    border-bottom: 1px solid transparent;
+  }
+  .k:hover { border-bottom-color: var(--socrates); color: var(--socrates); }
+  .k b { font: 500 8.5px/1 "IBM Plex Sans", sans-serif; color: var(--faint); margin-left: 7px; }
+  .note { font: 300 11.5px/1.5 "Literata", serif; color: var(--faint); margin-left: auto; max-width: 420px; text-align: right; }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <div class="rec"><i></i><span class="lbl" style="color:var(--zenon)">Toma 4</span></div>
+  <span class="t">04:11</span>
+  <span class="lbl">de 22:51</span>
+  <span class="lbl" style="margin-left:auto">Citas 06 / 19</span>
+</div>
+
+<div class="stage">
+  <div class="halo">
+    <svg viewBox="0 0 560 560">
+      <circle class="track" cx="280" cy="280" r="280"></circle>
+      <circle class="hold" id="hold" cx="280" cy="280" r="280"></circle>
+    </svg>
+  </div>
+
+  <div class="you" id="you">
+    <p>subrayan la importancia central de la caverna</p>
+    <p>en el pensamiento de Platón.</p>
+    <p class="now">     Así lo introduce:</p>
+    <p> </p>
+    <p>El argumento es simple y claro: los prisioneros</p>
+    <p>ven una proyección de la realidad, no la realidad</p>
+  </div>
+
+  <div class="who p-nw" data-v="whitehead"><div class="name" style="color:var(--whitehead)">Whitehead</div><div class="said">La caracterización más segura de la tradición filosófica europea…</div></div>
+  <div class="who p-ne" data-v="russell"><div class="name" style="color:var(--russell)">Russell</div><div class="said">Cuando piensas, piensas en algo…</div></div>
+  <div class="who p-w"  data-v="socrates" id="w-soc"><div class="name" style="color:var(--socrates)">Sócrates</div><div class="said" id="s-soc">Y ahora, dije, déjame mostrar en una figura hasta dónde está iluminada u oscura nuestra naturaleza.</div></div>
+  <div class="who p-e"  data-v="glaucon" id="w-gla"><div class="name" style="color:var(--glaucon)">Glaucón</div><div class="said" id="s-gla">Lo veo.</div></div>
+  <div class="who p-sw" data-v="wiki"><div class="name" style="color:var(--wiki)">Wikipedia</div><div class="said">Caracteriza las almas humanas como divinas e inmortales…</div></div>
+  <div class="who p-se" data-v="zenon"><div class="name" style="color:var(--zenon)">Zenón</div><div class="said">¡Error!</div></div>
+</div>
+
+<div class="script">
+  <div class="lane mine">
+    <div class="nm lbl">Tú</div>
+    <div class="trk" id="mine"></div>
+  </div>
+  <div class="lane">
+    <div class="nm lbl" style="color:var(--socrates)">Sócrates</div>
+    <div class="trk" id="l-soc"></div>
+  </div>
+  <div class="lane">
+    <div class="nm lbl" style="color:var(--glaucon)">Glaucón</div>
+    <div class="trk" id="l-gla"></div>
+  </div>
+  <div class="lane">
+    <div class="nm lbl">Otros</div>
+    <div class="trk" id="l-otr"></div>
+  </div>
+</div>
+
+<div class="foot">
+  <button class="k" id="fire">Dar la voz a Sócrates<b>N</b></button>
+  <button class="k">Repetir<b>P</b></button>
+  <button class="k">Lámina<b>L</b></button>
+  <button class="k">Detener la toma<b>S</b></button>
+  <button class="k">Montar<b>M</b></button>
+  <div class="note">
+    Los empalmes se colocan en silencio: donde ni tú ni nadie habla. Un corte
+    que toque una cita no se cierra.
+  </div>
+</div>
+
+<script>
+// --- the script in lanes: the dialogue zigzags between two lanes ---
+const mine = document.getElementById('mine');
+let x = 0;
+[['i', 15], ['ii', 12], ['iii', 10], ['iv', 18], ['v', 14], ['vi', 13], ['vii', 16]]
+  .forEach(([n, w], i) => {
+    const wv = Array.from({ length: Math.round(w * 3) },
+      () => `<b style="height:${5 + Math.random() * 30}px"></b>`).join('');
+    mine.insertAdjacentHTML('beforeend',
+      `<div class="tk ${i === 3 ? 'on' : ''}" style="left:${x}%;width:${w - 0.5}%">
+         <div class="wv">${wv}</div><span class="nm2">toma ${n}</span></div>`);
+    x += w;
+  });
+mine.insertAdjacentHTML('beforeend', '<div class="silence" style="left:44.2%;width:2.4%"></div>');
+
+const put = (lane, items, colour) => {
+  document.getElementById(lane).innerHTML = items.map(([l, w, n]) =>
+    `<div class="clip" style="left:${l}%;width:${w}%;background:var(--${colour})">${n}</div>`).join('');
+};
+// The 02–06 exchange: five turns alternating between the two lanes.
+put('l-soc', [[9, 5.5, '02'], [16.6, 2.4, '04'], [20.4, .9, '06'], [46, 2.6, '11'], [62, 3.4, '15'], [66.5, 3, '17']], 'socrates');
+put('l-gla', [[14.8, .9, '03'], [19.2, 1.1, '05'], [48.4, .9, '12'], [65.6, .8, '16'], [69.8, .8, '18']], 'glaucon');
+put('l-otr', [[4.6, 1.4, '01'], [24, 3.4, '07'], [29.2, .6, '08'], [31.6, 2.6, '09'], [42.6, 2, '10']], 'wiki');
+
+// --- the signature: the cast speaks, you go dark, the silence counts down ---
+const you = document.getElementById('you');
+const hold = document.getElementById('hold');
+const TURNS = [
+  ['w-soc', 's-soc', 'Y ahora, dije, déjame mostrar en una figura hasta dónde está iluminada u oscura nuestra naturaleza.', 4200],
+  ['w-gla', 's-gla', 'Lo veo.', 1100],
+  ['w-soc', 's-soc', '¿Y puedes ver hombres que pasan a lo largo de la pared llevando toda clase de vasijas?', 3200],
+  ['w-gla', 's-gla', 'Me has mostrado una extraña imagen, y esos son unos extraños prisioneros.', 2200],
+  ['w-soc', 's-soc', 'Como nosotros.', 1300],
+];
+let running = false;
+
+function speak(i, total, elapsed) {
+  if (i >= TURNS.length) {
+    you.classList.remove('dark');
+    hold.style.strokeDashoffset = 1758;
+    running = false;
+    return;
+  }
+  const [wid, sid, text, ms] = TURNS[i];
+  document.querySelectorAll('.who').forEach((w) => w.classList.remove('lit'));
+  document.getElementById(wid).classList.add('lit');
+
+  // one word at a time, lit as the voice pronounces it
+  const words = text.split(' ');
+  const el = document.getElementById(sid);
+  let k = 0;
+  const step = () => {
+    el.innerHTML = words.map((w, j) => (j === k ? `<u>${w}</u>` : w)).join(' ');
+    k++;
+    if (k <= words.length) setTimeout(step, ms / words.length);
+  };
+  step();
+
+  const t0 = performance.now();
+  (function ring(now) {
+    const done = elapsed + (now - t0);
+    hold.style.strokeDashoffset = 1758 * (1 - done / total);
+    if (now - t0 < ms) requestAnimationFrame(ring);
+  })(t0);
+
+  setTimeout(() => speak(i + 1, total, elapsed + ms + 350), ms + 350);
+}
+
+function fire() {
+  if (running) return;
+  running = true;
+  you.classList.add('dark');
+  const total = TURNS.reduce((s, t) => s + t[3] + 350, 0);
+  speak(0, total, 0);
+}
+document.getElementById('fire').onclick = fire;
+addEventListener('keydown', (e) => { if (e.key === 'n' || e.key === 'N') fire(); });
+</script>
+</body>
+</html>

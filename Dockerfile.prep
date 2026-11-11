@@ -1,0 +1,17 @@
+# Preparation image: turns a PDF passage into the assets the studio serves.
+# Kept separate from the runtime so the server image stays small and has no
+# Python in it.
+FROM python:3.13-slim
+
+# PyMuPDF reads and renders the PDF; ffmpeg's ffprobe measures the voice clips.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends ffmpeg tzdata \
+  && rm -rf /var/lib/apt/lists/* \
+  && ln -sf /usr/share/zoneinfo/America/Bogota /etc/localtime
+
+COPY preparar/requirements.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
+
+ENV TZ=America/Bogota
+WORKDIR /estudio
+ENTRYPOINT ["python3", "/estudio/preparar/lector.py"]

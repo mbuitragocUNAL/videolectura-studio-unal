@@ -1,0 +1,102 @@
+#!/usr/bin/env bash
+# Atajo para preparar una lectura y abrir el estudio con ella.
+#
+#   ./estudio nueva --libro ~/Downloads/LIBRO.pdf --paginas 207-218 \
+#                   --numero 22 --titulo "Belleza cuántica II: exuberancia"
+#   ./estudio preparar lecturas/22-belleza-cuantica-ii-exuberancia
+#   ./estudio abrir    lecturas/22-belleza-cuantica-ii-exuberancia
+#   ./estudio abrir                 (y elegir o crear la lectura en /lecturas)
+#   ./estudio cerrar
+#   ./estudio voces estado|disenar|elegir|generar|subir lecturas/NN-titulo …
+#
+# `nueva` y `preparar` usan Python local si tiene PyMuPDF (preparar/.venv o el
+# python3 del sistema); si no, el contenedor `prep`, que no pide instalar nada.
+set -euo pipefail
+cd "$(dirname "$0")"
+
+python_local() {
+  for py in preparar/.venv/bin/python python3; do
+    if command -v "$py" >/dev/null 2>&1 && "$py" -c "import pymupdf" 2>/dev/null; then
+      echo "$py"; return 0
+    fi
+  done
+  return 1
+}
+
+preparar() {
+  local libro_dir=""
+  # Para el contenedor: montar la carpeta del libro que se pasó con --libro.
+  local prev=""
+  for a in "$@"; do
+    if [[ "$prev" == "--libro" ]]; then libro_dir="$(cd "$(dirname "$a")" && pwd)"; fi
+    prev="$a"
+  done
+  if py="$(python_local)"; then
+    "$py" preparar/lector.py "$@"
+  else
+    echo "  (sin PyMuPDF local: uso el contenedor de preparación)"
+    if [[ -n "$libro_dir" ]]; then export LIBROS="$libro_dir"; fi
+    docker compose --profile tools run --rm prep "$@"
+  fi
+}
+
+carpeta_valida() {
+  if [[ -z "${1:-}" || ! -f "$1/marcas.json" ]]; then
+    echo "Uso: ./estudio abrir lecturas/NN-titulo   (la carpeta tiene que estar preparada)" >&2
+    exit 1
+  fi
+}
+
+# Las voces de las citas: en el Mac, para que Qwen use la GPU. Sin Qwen
+# instalado sirve igual para ElevenLabs y para subir clips propios.
+voces() {
+  local py=python3
+  [[ -x preparar/.venv/bin/python ]] && py=preparar/.venv/bin/python
+  STUDIO_VOCES_DIR="${STUDIO_VOCES_DIR:-$(pwd)/voces}" "$py" preparar/voz.py "$@"
+  # Las duraciones nuevas van a marcas.json.
+  if [[ "${1:-}" == "generar" || "${1:-}" == "subir" ]] && [[ -n "${2:-}" ]]; then
+    preparar preparar "$2" >/dev/null && echo "  marcas.json al día"
+  fi
+}
+
+orden="${1:-}"; shift || true
+case "$orden" in
+  nueva|preparar)
+    preparar "$orden" "$@"
+    ;;
+  abrir)
+    mkdir -p lecturas libros
+    if [[ -z "${1:-}" ]]; then
+      # Sin carpeta: la primera lectura preparada en lecturas/, o ninguna en
+      # un clon nuevo. Se elige o se crea en http://localhost:8100/lecturas.
+      docker compose up -d --build studio
+      echo; echo "  Estudio en http://localhost:8100  (elige o crea la lectura en /lecturas)"
+      exit 0
+    fi
+    carpeta_valida "$1"
+    dir="$(cd "$1" && pwd)"
+    mkdir -p "$dir/estudio"
+    if [[ "$(dirname "$dir")" == "$(pwd)/lecturas" ]]; then
+      # Dentro de lecturas/: el contenedor la ve en /estudio/lecturas, y así
+      # la consola puede volver a prepararla y recargarla.
+      nombre="$(basename "$dir")"
+      STUDIO_READING_DIR="/estudio/lecturas/$nombre" STUDIO_DATA_DIR="/estudio/lecturas/$nombre/estudio" \
+        docker compose up -d --build studio
+    else
+      LECTURA="$dir" DATOS="$dir/estudio" docker compose up -d --build studio
+    fi
+    echo
+    echo "  Estudio con $(basename "$dir") en http://localhost:8100"
+    echo "  Tomas y render en $1/estudio/"
+    ;;
+  cerrar)
+    docker compose down
+    ;;
+  voces)
+    voces "$@"
+    ;;
+  *)
+    sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//'
+    exit 1
+    ;;
+esac

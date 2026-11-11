@@ -1,0 +1,5 @@
+# Qwen3-TTS, para diseñar y generar las voces de las citas en el computador
+# (preparar/voz.py, motor «qwen»). No hace falta para ElevenLabs ni para subir
+# clips propios. Cada modelo pesa unos 4 GB y se descarga la primera vez.
+qwen-tts
+soundfile

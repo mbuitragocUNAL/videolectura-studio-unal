@@ -1,0 +1,73 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+/* The score's palette. Everything is greyscale except the characters' voices
+   and the playhead, which is the only pure-bright thing on screen. */
+@theme static {
+  --color-score-bg:    #0d0f12;
+  --color-score-stave: #15181d;
+  --color-score-grid:  #1e232a;
+  --color-score-edge:  #2b323b;
+  --color-score-dim:   #79828d;
+  --color-score-faint: #4a525c;
+  --color-signal:      #f5f749;
+
+  --color-voice-socrates:  #ff9f45;
+  --color-voice-glaucon:   #45d98a;
+  --color-voice-russell:   #a98bff;
+  --color-voice-whitehead: #4fb0ff;
+  --color-voice-wikipedia: #8892a0;
+  --color-voice-zenon:     #ff5470;
+}
+
+/* The studio is dark by construction, so `colorMode` is off and Nuxt UI never
+   gets its `.dark` class. That leaves its *light* palette in force, and every
+   token not overridden here keeps a light-mode value — which is how an alert
+   title ended up near-black on a near-black page. The set below is therefore
+   the complete one Nuxt UI defines, not a convenient subset: leave a token out
+   and some component nobody has looked at yet renders for a white page. */
+:root {
+  --ui-bg: var(--color-score-bg);
+  --ui-bg-muted: var(--color-score-stave);
+  --ui-bg-elevated: var(--color-score-grid);
+  --ui-bg-accented: var(--color-score-edge);
+  --ui-bg-inverted: #eef1f4;
+
+  --ui-border: var(--color-score-grid);
+  --ui-border-muted: var(--color-score-grid);
+  --ui-border-accented: var(--color-score-edge);
+  --ui-border-inverted: #eef1f4;
+
+  --ui-text-dimmed: var(--color-score-faint);
+  --ui-text-muted: var(--color-score-dim);
+  --ui-text-toned: #b3bcc6;
+  --ui-text: #eef1f4;
+  --ui-text-highlighted: #ffffff;
+  --ui-text-inverted: var(--color-score-bg);
+
+  /* Literal, not `var(--ui-color-error-400)`: Tailwind 4 only emits the shade
+     variables some utility actually asked for, so pointing at one that was
+     never generated leaves the colour undefined and the text falls back to
+     whatever it inherits. These are the score's own red, amber and green
+     lifted until they carry on #0d0f12 under a 10% wash of themselves — the
+     default mid-tones are what made «esta toma no tiene duración» hard to
+     read. */
+  --ui-error: #ff6b81;
+  --ui-warning: #ffb454;
+  --ui-success: #5fe3a1;
+}
+
+html, body, #__nuxt {
+  height: 100%;
+  background: var(--color-score-bg);
+  color: #eef1f4;
+}
+
+body {
+  /* One hairline grid under everything: the score is ruled paper. */
+  background-image: repeating-linear-gradient(
+    90deg, rgba(255, 255, 255, .018) 0 1px, transparent 1px 64px
+  );
+}
+
+.tabular { font-variant-numeric: tabular-nums; }

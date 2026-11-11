@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>B · Aparato crítico</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Spectral+SC:wght@400;500;600&family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink:      #14120f;   /* warm black, not neutral: paper read by lamplight */
+    --ink-2:    #1b1815;
+    --rule:     #2e2a24;
+    --vellum:   #efe6d5;
+    --faded:    #8b8375;
+    --quiet:    #5e574c;
+    --rubric:   #c4553d;   /* the red of a manuscript rubric */
+    --gilt:     #c9a227;
+    --socrates: #c9a227;
+    --glaucon:  #6f8f5f;
+    --russell:  #8f7bb0;
+    --whitehead:#5a7fa0;
+    --wiki:     #857d70;
+    --zenon:    #c4553d;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--ink);
+    color: var(--vellum);
+    font: 400 15px/1.6 "Spectral", Georgia, serif;
+    padding: 34px 40px 40px;
+    max-width: 1500px; margin: 0 auto;
+    /* A faint warm vignette, like a page under a reading lamp. */
+    background-image: radial-gradient(1100px 700px at 50% -15%, rgba(201,162,39,.045), transparent 70%);
+  }
+
+  /* ---- masthead ---- */
+  header {
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 14px; margin-bottom: 4px;
+    display: flex; align-items: baseline; gap: 18px;
+  }
+  h1 {
+    font: 500 21px/1 "Spectral SC", serif;
+    letter-spacing: .04em;
+  }
+  .folio {
+    font: 400 12px/1 "Spectral SC", serif;
+    color: var(--faded); letter-spacing: .08em;
+  }
+  .folio em { color: var(--gilt); font-style: normal; }
+  .rec {
+    margin-left: auto;
+    font: 400 11px/1 "Spectral SC", serif; letter-spacing: .16em;
+    color: var(--rubric); display: flex; align-items: center; gap: 8px;
+  }
+  .rec::before {
+    content: ""; width: 7px; height: 7px; border-radius: 50%;
+    background: var(--rubric); animation: pulse 1.4s ease-in-out infinite;
+  }
+  @keyframes pulse { 50% { opacity: .3; } }
+
+  /* ---- fore-edge ruler: the whole reading as one hairline ---- */
+  .edge { position: relative; height: 46px; margin-bottom: 26px; }
+  .edge-rule {
+    position: absolute; left: 0; right: 0; top: 22px; height: 1px;
+    background: var(--rule);
+  }
+  .edge-read {
+    position: absolute; left: 0; top: 22px; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gilt));
+  }
+  .edge .sec {
+    position: absolute; top: 0;
+    font: 400 10px/1 "Spectral SC", serif; color: var(--quiet);
+    letter-spacing: .07em; white-space: nowrap;
+    padding-left: 5px; border-left: 1px solid var(--rule);
+    padding-bottom: 6px; max-width: 150px; overflow: hidden;
+  }
+  .edge .q {
+    position: absolute; top: 19px; width: 1px; height: 7px;
+  }
+  .edge .q::after {
+    content: attr(data-n);
+    position: absolute; top: 9px; left: -5px;
+    font: 400 8px/1 "Courier Prime", monospace; color: inherit;
+  }
+  .edge .now {
+    position: absolute; top: 14px; width: 1px; height: 17px; background: var(--vellum);
+  }
+  .edge .now::before {
+    content: ""; position: absolute; top: -4px; left: -3px;
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--vellum);
+  }
+
+  /* ---- main: apparatus | text | rail ---- */
+  .sheet { display: grid; grid-template-columns: 1fr 268px; gap: 44px; }
+
+  .text-col { display: grid; grid-template-columns: 56px 1fr; }
+
+  /* left margin: line numbers and sigla, as in a critical edition */
+  .apparatus { border-right: 1px solid var(--rule); padding-right: 12px; }
+  .apparatus div {
+    height: 1.6em; text-align: right;
+    font: 400 10px/1.6 "Courier Prime", monospace;
+    color: var(--quiet);
+  }
+  .apparatus div.mark { color: var(--rubric); }
+
+  .lines { padding-left: 20px; }
+  .lines p {
+    height: 1.6em; white-space: pre; overflow: hidden;
+    color: var(--quiet); font-weight: 300;
+    transition: color .25s;
+  }
+  .lines p.read { color: #4a443b; }
+  .lines p.live {
+    color: var(--vellum); font-weight: 400;
+    /* No block highlight: the live line is simply the one that is lit. */
+    text-shadow: 0 0 22px rgba(239,230,213,.28);
+  }
+  .lines p.soon { color: #9b9385; }
+
+  .sigil {
+    font: 500 10px/1 "Spectral SC", serif;
+    letter-spacing: .1em; padding-right: 10px;
+    border-right: 1px solid currentColor; margin-right: 10px;
+  }
+
+  /* ---- right rail ---- */
+  .rail > section { margin-bottom: 28px; }
+  h2 {
+    font: 500 10px/1 "Spectral SC", serif;
+    letter-spacing: .17em; color: var(--faded);
+    padding-bottom: 7px; border-bottom: 1px solid var(--rule); margin-bottom: 12px;
+    display: flex; justify-content: space-between;
+  }
+  .clock {
+    font: 400 31px/1 "Courier Prime", monospace;
+    color: var(--vellum); letter-spacing: -.02em;
+  }
+  .clock small { font-size: 13px; color: var(--faded); }
+  .sub { font: 400 11px/1.5 "Spectral", serif; color: var(--faded); font-style: italic; margin-top: 4px; }
+
+  /* quiet, typographic controls: verbs, not buttons */
+  .verbs { display: flex; flex-wrap: wrap; gap: 4px 18px; }
+  .verb {
+    font: 400 13px/1 "Spectral", serif; color: var(--vellum);
+    background: none; border: none; cursor: pointer; padding: 5px 0;
+    border-bottom: 1px solid transparent;
+  }
+  .verb:hover { border-bottom-color: var(--gilt); color: var(--gilt); }
+  .verb i { font: 400 9px/1 "Courier Prime", monospace; color: var(--quiet); font-style: normal; margin-left: 6px; }
+  .verb.stop { color: var(--rubric); }
+
+  .cites { font-size: 12.5px; }
+  .cite {
+    display: flex; gap: 9px; align-items: baseline;
+    padding: 4px 0; color: var(--faded);
+  }
+  .cite .n { font: 400 10px/1 "Courier Prime", monospace; color: var(--quiet); width: 16px; }
+  .cite .s { width: 3px; align-self: stretch; }
+  .cite.done { color: var(--quiet); }
+  .cite.live { color: var(--vellum); }
+  .cite .d { margin-left: auto; font: 400 10px/1 "Courier Prime", monospace; color: var(--quiet); }
+
+  /* ---- meter: a simple ruled gauge ---- */
+  .gauge { height: 3px; background: var(--rule); position: relative; margin: 9px 0 5px; }
+  .gauge b { position: absolute; left: 0; top: 0; bottom: 0; background: var(--gilt); }
+  .gauge-scale {
+    display: flex; justify-content: space-between;
+    font: 400 8px/1 "Courier Prime", monospace; color: var(--quiet);
+  }
+
+  /* ---- montage ---- */
+  .montage { margin-top: 34px; border-top: 1px solid var(--rule); padding-top: 20px; }
+  .staff { display: flex; align-items: center; gap: 16px; margin-bottom: 12px; }
+  .staff-label {
+    width: 78px; text-align: right; flex-shrink: 0;
+    font: 500 10px/1 "Spectral SC", serif; letter-spacing: .1em; color: var(--faded);
+  }
+  .staff-lane { flex: 1; height: 44px; position: relative; border-bottom: 1px solid var(--rule); }
+  .take {
+    position: absolute; bottom: 0; top: 6px; border-bottom: 2px solid var(--vellum);
+    display: flex; align-items: flex-end; gap: 1px; padding-bottom: 2px;
+  }
+  .take b { flex: 1; background: rgba(239,230,213,.32); }
+  .take.picked b { background: var(--gilt); }
+  .take-name {
+    position: absolute; top: -13px; left: 0;
+    font: 400 9px/1 "Courier Prime", monospace; color: var(--quiet);
+  }
+  .excised {
+    position: absolute; top: 4px; bottom: 0;
+    border-left: 1px solid var(--rubric); border-right: 1px solid var(--rubric);
+    background: rgba(196,85,61,.1);
+  }
+  .excised::after {
+    content: "excluido"; position: absolute; top: -13px; left: 0;
+    font: 400 8px/1 "Spectral SC", serif; letter-spacing: .08em; color: var(--rubric);
+  }
+  .qmark {
+    position: absolute; top: 12px; height: 16px; border-radius: 1px;
+  }
+  .qmark::after {
+    content: attr(data-n); position: absolute; top: -12px; left: 0;
+    font: 400 8px/1 "Courier Prime", monospace; color: inherit;
+  }
+  .colophon {
+    margin-top: 20px; font: 300 12px/1.6 "Spectral", serif;
+    color: var(--quiet); font-style: italic; max-width: 620px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Estudio de lecturas</h1>
+  <div class="folio">ME01 · Lectura <em>07</em> · Platón II: escapando de la caverna</div>
+  <div class="rec">GRABANDO · TOMA 4</div>
+</header>
+
+<div class="edge" id="edge"></div>
+
+<div class="sheet">
+  <div class="text-col">
+    <div class="apparatus" id="apparatus"></div>
+    <div class="lines" id="lines"></div>
+  </div>
+
+  <div class="rail">
+    <section>
+      <h2>Tiempo</h2>
+      <div class="clock">08:42 <small>/ 22:51</small></div>
+      <div class="sub">Proyección dentro del límite de veinticinco minutos.</div>
+    </section>
+
+    <section>
+      <h2>Voz</h2>
+      <div class="gauge"><b style="width:62%"></b></div>
+      <div class="gauge-scale"><span>−40</span><span>−24</span><span>−12</span><span>0</span></div>
+      <div class="sub">−14 dB · holgado</div>
+    </section>
+
+    <section>
+      <h2>Acciones</h2>
+      <div class="verbs">
+        <button class="verb stop">Detener la toma<i>S</i></button>
+        <button class="verb">Sonar la cita<i>N</i></button>
+        <button class="verb">Repetir<i>P</i></button>
+        <button class="verb">Mostrar la lámina<i>L</i></button>
+        <button class="verb">Poner la flecha<i>A</i></button>
+        <button class="verb">Montar<i>M</i></button>
+      </div>
+    </section>
+
+    <section>
+      <h2>Citas <span>06 / 19</span></h2>
+      <div class="cites" id="cites"></div>
+    </section>
+  </div>
+</div>
+
+<div class="montage">
+  <h2 style="border:none;margin-bottom:16px">Montaje <span>siete tomas · 24:18 tras las excisiones</span></h2>
+
+  <div class="staff">
+    <div class="staff-label">Voz</div>
+    <div class="staff-lane" id="voice"></div>
+  </div>
+  <div class="staff">
+    <div class="staff-label">Citas</div>
+    <div class="staff-lane" id="quotes"></div>
+  </div>
+
+  <p class="colophon">
+    Las excisiones se marcan al margen y no se borran: el material queda, sólo
+    deja de leerse. Una cita que cae dentro de una excisión se descarta y vuelve
+    a la lista pendiente.
+  </p>
+</div>
+
+<script>
+const SECTIONS = [
+  ['Platón II', 0], ['Alegoría de la caverna', 7.2], ['Visión de la eternidad', 20.6],
+  ['El ideal', 38.4], ['Liberación', 48.6], ['Deshaciendo la proyección', 57.6],
+  ['El regreso', 65.1], ['Dos astronomías', 75.4],
+];
+const CUES = [
+  [4.8, 'whitehead', '01'], [9.1, 'socrates', '02'], [11.0, 'glaucon', '03'],
+  [11.9, 'glaucon', '05'], [24.0, 'russell', '07'], [29.1, 'zenon', '08'],
+  [31.5, 'russell', '09'], [42.5, 'wiki', '10'], [46.3, 'socrates', '11'],
+  [62.0, 'socrates', '15'], [65.2, 'socrates', '19'],
+];
+
+const edge = document.getElementById('edge');
+edge.insertAdjacentHTML('beforeend', '<div class="edge-rule"></div>');
+edge.insertAdjacentHTML('beforeend', '<div class="edge-read" style="width:38%"></div>');
+SECTIONS.forEach(([t, p]) => {
+  edge.insertAdjacentHTML('beforeend', `<div class="sec" style="left:${p}%">${t}</div>`);
+});
+CUES.forEach(([p, who, n]) => {
+  edge.insertAdjacentHTML('beforeend',
+    `<div class="q" data-n="${n}" style="left:${p}%;background:var(--${who});color:var(--${who})"></div>`);
+});
+edge.insertAdjacentHTML('beforeend', '<div class="now" style="left:38%"></div>');
+
+// --- the passage, with its own line numbers ---
+const LINES = [
+  [30, 'read',  'Sócrates describe la caverna a Glaucón, el hermano'],
+  [31, 'read',  'mayor de Platón, que también fue estudiante de Sócrates.'],
+  [32, 'read',  'Este escenario, así como el reparto de personajes,'],
+  [33, 'read',  'subrayan la importancia central de la caverna'],
+  [34, 'live',  '     Así lo introduce:'],
+  [35, '',      ''],
+  [36, 'soon',  'Y ahora, dije, déjame mostrar en una figura hasta dónde', 'Sócrates'],
+  [37, 'soon',  '  está iluminada u oscura nuestra naturaleza: ¡Aquí está!'],
+  [38, 'soon',  '  Seres humanos que viven en una guarida subterránea,'],
+  [39, 'soon',  '  que tiene una boca abierta hacia la luz y que alcanza'],
+  [40, 'soon',  '  todo lo largo de la guarida; han estado ahí desde niños,'],
+  [41, '',      '  y tienen encadenadas las piernas y el cuello de manera'],
+  [42, '',      '  que no se pueden mover, y solo pueden mirar hacia delante.'],
+  [43, '',      ''],
+  [44, '',      'Glaucón. Lo veo.'],
+];
+const ap = document.getElementById('apparatus');
+const lines = document.getElementById('lines');
+LINES.forEach(([n, cls, text, sigil]) => {
+  ap.insertAdjacentHTML('beforeend', `<div class="${sigil ? 'mark' : ''}">${sigil ? '§' : n}</div>`);
+  const mark = sigil
+    ? `<span class="sigil" style="color:var(--socrates)">${sigil}</span>`
+    : '';
+  lines.insertAdjacentHTML('beforeend', `<p class="${cls}">${mark}${text || ' '}</p>`);
+});
+
+// --- cites ---
+const CITES = [
+  ['01', 'Whitehead', 'whitehead', '7.9', 'done'], ['02', 'Sócrates', 'socrates', '46.5', 'done'],
+  ['03', 'Glaucón', 'glaucon', '1.0', 'done'], ['04', 'Sócrates', 'socrates', '15.2', 'done'],
+  ['05', 'Glaucón', 'glaucon', '4.3', 'done'], ['06', 'Sócrates', 'socrates', '1.1', 'done'],
+  ['07', 'Russell', 'russell', '29.7', 'live'], ['08', 'Zenón', 'zenon', '0.8', ''],
+  ['09', 'Russell', 'russell', '20.7', ''], ['10', 'Wikipedia', 'wiki', '14.3', ''],
+  ['11', 'Sócrates', 'socrates', '18.5', ''],
+];
+document.getElementById('cites').innerHTML = CITES.map(([n, who, c, d, cls]) =>
+  `<div class="cite ${cls}"><span class="n">${n}</span>
+     <span class="s" style="background:var(--${c})"></span>${who}<span class="d">${d}</span></div>`).join('');
+
+// --- montage staves ---
+const voice = document.getElementById('voice');
+let x = 0;
+[['i', 14], ['ii', 11], ['iii', 9], ['iv', 17], ['v', 13], ['vi', 12], ['vii', 20]]
+  .forEach(([name, w], i) => {
+    const bars = Array.from({ length: Math.round(w * 2.6) },
+      () => `<b style="height:${5 + Math.random() * 28}px"></b>`).join('');
+    voice.insertAdjacentHTML('beforeend',
+      `<div class="take ${i === 3 ? 'picked' : ''}" style="left:${x}%;width:${w - 0.5}%">
+         <span class="take-name">toma ${name}</span>${bars}</div>`);
+    x += w;
+  });
+voice.insertAdjacentHTML('beforeend', '<div class="excised" style="left:49%;width:3.5%"></div>');
+
+const quotes = document.getElementById('quotes');
+[[5, 3, 'whitehead', '01'], [10, 7, 'socrates', '02'], [18, 2, 'glaucon', '03'],
+ [26, 5, 'russell', '07'], [44, 3, 'wiki', '10'], [58, 6, 'socrates', '15'], [78, 4, 'socrates', '19']]
+  .forEach(([left, w, who, n]) => {
+    quotes.insertAdjacentHTML('beforeend',
+      `<div class="qmark" data-n="${n}" style="left:${left}%;width:${w}%;background:var(--${who});color:var(--${who})"></div>`);
+  });
+</script>
+</body>
+</html>

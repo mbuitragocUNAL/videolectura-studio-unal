@@ -1,0 +1,28 @@
+{
+  "name": "estoc-studio-frontend",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.1.1",
+  "scripts": {
+    "dev": "nuxt dev",
+    "build": "nuxt build",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "typecheck": "nuxt typecheck",
+    "test": "node --test \"test/**/*.test.ts\""
+  },
+  "dependencies": {
+    "@nuxt/ui": "^4.11.0",
+    "@vueuse/core": "^15.0.0",
+    "@vueuse/nuxt": "^15.0.0",
+    "nuxt": "^4.4.2",
+    "pdfjs-dist": "4.10.38",
+    "tailwindcss": "^4.3.0",
+    "vue": "^3.5.23"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.2",
+    "typescript": "^5.9.2",
+    "vue-tsc": "^2.2.0"
+  }
+}

@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>3 · Veinticinco minutos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:     #1c1d21;    /* cool dark, so the warm page reads as another light */
+    --bg-2:   #24262b;
+    --rule:   #34373d;
+    --fg:     #e9eaec;
+    --label:  #878b92;
+    --faint:  #5b5f66;
+    --over:   #e8a33d;    /* the 25-minute mark, the reason this exists */
+    --rec:    #e0574a;
+    --socrates: #d9a24a; --glaucon: #b9cf92; --russell: #9aaed0;
+    --whitehead: #c98f6b; --wiki: #9a9ea6; --zenon: #e0574a;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--fg);
+    font: 400 13px/1.5 "Newsreader", Georgia, serif;
+    height: 100vh; overflow: hidden;
+    display: grid; grid-template-columns: 1fr 340px;
+  }
+  .lbl { font: 400 9.5px/1 "DM Mono", monospace; letter-spacing: .12em; text-transform: uppercase; color: var(--label); }
+  .fig { font-family: "Instrument Serif", Georgia, serif; font-variant-numeric: tabular-nums; }
+  .mono { font-family: "DM Mono", monospace; font-variant-numeric: tabular-nums; }
+
+  /* ---- the ring ---- */
+  .arena { position: relative; display: grid; place-items: center; padding: 20px; }
+  svg { width: min(78vh, 100%); height: min(78vh, 100%); overflow: visible; }
+  .track { fill: none; stroke: var(--rule); stroke-width: 12; }
+  .sec-arc { fill: none; stroke: #3d4149; stroke-width: 3; }
+  .sec-arc.here { stroke: var(--fg); }
+  .take-arc { fill: none; stroke: #6d727a; stroke-width: 13; }
+  .take-arc.on { stroke: #aeb4bc; }
+  .take-arc.muted { stroke: #3d4149; stroke-dasharray: 3 4; }
+  .cut-arc { fill: none; stroke: var(--bg); stroke-width: 15; }
+  .q-tick { stroke-width: 2.5; }
+  .hand { stroke: var(--rec); stroke-width: 1.6; }
+  .hand-cap { fill: var(--rec); }
+  .over-mark { stroke: var(--over); stroke-width: 2.5; }
+  .sec-label { font: 400 11px/1 "Newsreader", serif; font-style: italic; fill: var(--label); }
+  .tick-label { font: 400 8.5px/1 "DM Mono", monospace; fill: var(--faint); }
+
+  /* the centre: prose while reading, or the unrolled take while editing */
+  .centre {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    width: 46%; text-align: center; pointer-events: none;
+  }
+  .centre .fig.big { font-size: 58px; line-height: 1; letter-spacing: -.01em; }
+  .centre .fig.big.over { color: var(--over); }
+  .prose { margin-top: 10px; }
+  .prose p {
+    font: 300 17px/1.5 "Newsreader", serif; color: var(--faint);
+    white-space: pre-wrap;
+  }
+  .prose p.now { color: var(--fg); font-weight: 400; }
+  .badge {
+    display: inline-block; font: 400 8.5px/1 "DM Mono", monospace;
+    letter-spacing: .1em; text-transform: uppercase;
+    padding: 3px 7px; border-radius: 2px; color: var(--bg); margin-bottom: 7px;
+  }
+
+  /* the unrolled take, straightened out of the ring */
+  .unrolled {
+    position: absolute; left: 8%; right: 8%; top: 50%; transform: translateY(-50%);
+    height: 120px; opacity: 0; pointer-events: none; transition: opacity .35s ease;
+  }
+  .unrolled.on { opacity: 1; pointer-events: auto; }
+  .unrolled .wv {
+    height: 74px; display: flex; align-items: center; gap: 1px;
+    background: var(--bg-2); border: 1px solid var(--rule); border-radius: 2px; padding: 0 3px;
+  }
+  .unrolled .wv b { flex: 1; background: #737880; border-radius: .5px; }
+  .unrolled .cut {
+    position: absolute; top: 0; height: 74px;
+    background: repeating-linear-gradient(45deg, rgba(224,87,74,.22) 0 4px, transparent 4px 8px);
+    border-left: 1px solid var(--rec); border-right: 1px solid var(--rec);
+  }
+  .unrolled .scale { display: flex; justify-content: space-between; margin-top: 7px; }
+
+  /* ---- rail ---- */
+  .rail { border-left: 1px solid var(--rule); padding: 20px 18px; overflow: auto; }
+  .rail h2 {
+    font: 400 9.5px/1 "DM Mono", monospace; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--label); padding-bottom: 8px; border-bottom: 1px solid var(--rule);
+    margin: 0 0 12px; display: flex; justify-content: space-between;
+  }
+  .rail section { margin-bottom: 24px; }
+  .row { display: flex; align-items: baseline; gap: 9px; padding: 5px 0; font-size: 12.5px; }
+  .row .n { font: 400 9.5px/1 "DM Mono", monospace; color: var(--faint); width: 22px; }
+  .row .d { margin-left: auto; font: 400 9.5px/1 "DM Mono", monospace; color: var(--faint); }
+  .row.on { color: var(--fg); }
+  .row:not(.on) { color: var(--label); }
+  .row .sw { width: 3px; align-self: stretch; }
+
+  .keys { display: grid; gap: 5px; }
+  .k {
+    font: 400 13px/1 "Newsreader", serif; color: var(--fg); text-align: left;
+    background: var(--bg-2); border: 1px solid var(--rule); border-radius: 3px;
+    padding: 10px 12px; cursor: pointer; display: flex; justify-content: space-between;
+  }
+  .k:hover { border-color: var(--faint); }
+  .k span { font: 400 9px/1 "DM Mono", monospace; color: var(--faint); }
+  .k.stop { color: #f2b5ae; border-color: #55302c; background: #2c1f1e; }
+  .meter { height: 3px; background: var(--rule); position: relative; margin-top: 12px; }
+  .meter b { position: absolute; inset: 0 auto 0 0; background: var(--glaucon); }
+  .hint { font: 300 11.5px/1.55 "Newsreader", serif; color: var(--faint); margin-top: 10px; }
+</style>
+</head>
+<body>
+
+<div class="arena">
+  <svg viewBox="-160 -160 320 320" id="ring"></svg>
+
+  <div class="centre" id="centre">
+    <div class="lbl">tras cortes</div>
+    <div class="fig big" id="total">24:18</div>
+    <div class="prose">
+      <p>subrayan la importancia central de la caverna</p>
+      <p class="now">     Así lo introduce:</p>
+      <p><span class="badge" style="background:var(--socrates)">N · Sócrates</span></p>
+      <p>Y ahora, dije, déjame mostrar en una figura</p>
+    </div>
+  </div>
+
+  <div class="unrolled" id="unrolled">
+    <div class="lbl" style="margin-bottom:7px">Toma iv · Alegoría de la caverna · 03:42</div>
+    <div class="wv" id="wv"></div>
+    <div class="cut" style="left:47%;width:5%"></div>
+    <div class="scale">
+      <span class="lbl">00:00</span><span class="lbl">01:50</span><span class="lbl">03:42</span>
+    </div>
+  </div>
+</div>
+
+<div class="rail">
+  <section>
+    <h2>Gasto</h2>
+    <div class="row on"><span class="n">∑</span>Siete tomas<span class="d">24:18</span></div>
+    <div class="row"><span class="n">−</span>Cortes<span class="d">01:07</span></div>
+    <div class="row"><span class="n">+</span>Citas sintéticas<span class="d">04:19</span></div>
+    <div class="row"><span class="n">!</span>Límite<span class="d" style="color:var(--over)">25:00</span></div>
+    <div class="hint">Quedan 42 segundos de margen. El diálogo 15–19 aún no se ha grabado y pide 01:13.</div>
+  </section>
+
+  <section>
+    <h2>Tomas <span>7</span></h2>
+    <div class="row"><span class="n">i</span><span class="sw" style="background:#6d727a"></span>Platón II<span class="d">03:10</span></div>
+    <div class="row"><span class="n">ii</span><span class="sw" style="background:#6d727a"></span>Alegoría<span class="d">02:44</span></div>
+    <div class="row"><span class="n">iii</span><span class="sw" style="background:#6d727a"></span>Visión eternidad<span class="d">04:01</span></div>
+    <div class="row on"><span class="n">iv</span><span class="sw" style="background:#aeb4bc"></span>El ideal<span class="d">03:42</span></div>
+    <div class="row"><span class="n">v</span><span class="sw" style="background:#6d727a"></span>Liberación<span class="d">03:28</span></div>
+    <div class="row"><span class="n">vi</span><span class="sw" style="background:#6d727a"></span>Deshaciendo<span class="d">03:19</span></div>
+    <div class="row"><span class="n">vii</span><span class="sw" style="background:#6d727a"></span>El regreso<span class="d">03:54</span></div>
+  </section>
+
+  <section>
+    <h2>Acciones</h2>
+    <div class="keys">
+      <button class="k">Sonar la cita 07 <span>N</span></button>
+      <button class="k stop">Detener la toma <span>S</span></button>
+      <button class="k" id="unroll">Desenrollar la toma iv <span>↵</span></button>
+      <button class="k">Montar <span>M</span></button>
+    </div>
+    <div class="meter"><b style="width:58%"></b></div>
+    <div class="lbl" style="margin-top:5px">−14 dB</div>
+  </section>
+</div>
+
+<script>
+const R = 132, TAKE_R = 112, TICK_R = 98;
+const ring = document.getElementById('ring');
+const TAU = Math.PI * 2;
+const pt = (r, f) => [r * Math.sin(f * TAU), -r * Math.cos(f * TAU)];
+const arc = (r, a, b) => {
+  const [x1, y1] = pt(r, a), [x2, y2] = pt(r, b);
+  return `M ${x1} ${y1} A ${r} ${r} 0 ${b - a > .5 ? 1 : 0} 1 ${x2} ${y2}`;
+};
+const add = (html) => ring.insertAdjacentHTML('beforeend', html);
+
+// the budget itself
+add(`<circle class="track" cx="0" cy="0" r="${R}"></circle>`);
+
+// minute ticks
+for (let m = 0; m <= 25; m++) {
+  const f = m / 25, [x1, y1] = pt(R + 7, f), [x2, y2] = pt(R + (m % 5 ? 10 : 14), f);
+  add(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${m % 5 ? '#3d4149' : '#5b5f66'}" stroke-width="1"></line>`);
+  if (m % 5 === 0) {
+    const [lx, ly] = pt(R + 24, f);
+    add(`<text class="tick-label" x="${lx}" y="${ly}" text-anchor="middle" dominant-baseline="middle">${m}′</text>`);
+  }
+}
+
+// sections, as arcs outside the ring, with horizontal labels on leaders
+const SECS = [
+  ['Platón II', 0, .072], ['Alegoría de la caverna', .072, .206],
+  ['Visión de la eternidad', .206, .384], ['El ideal', .384, .486],
+  ['Liberación', .486, .576], ['Deshaciendo la proyección', .576, .651],
+  ['El regreso a la ingenuidad', .651, .754], ['Dos tipos de astronomía', .754, .973],
+];
+SECS.forEach(([name, a, b], i) => {
+  add(`<path class="sec-arc ${i === 3 ? 'here' : ''}" d="${arc(R + 20, a + .004, b - .004)}"></path>`);
+  const mid = (a + b) / 2, [lx, ly] = pt(R + 34, mid);
+  const anchor = Math.sin(mid * TAU) > .08 ? 'start' : Math.sin(mid * TAU) < -.08 ? 'end' : 'middle';
+  add(`<text class="sec-label" x="${lx}" y="${ly}" text-anchor="${anchor}" dominant-baseline="middle">${name}</text>`);
+});
+
+// takes: arcs one radius in, in assembly order; cuts are gaps
+const TAKES = [[0, .128], [.132, .242], [.246, .407], [.411, .559, 'on'], [.563, .702], [.706, .839], [.843, .973]];
+TAKES.forEach(([a, b, cls]) => add(`<path class="take-arc ${cls || ''}" d="${arc(TAKE_R, a, b)}"></path>`));
+add(`<path class="cut-arc" d="${arc(TAKE_R, .481, .505)}"></path>`);
+
+// quotations: ticks inside, length proportional to duration
+const QS = [
+  [.048, 'whitehead', 5], [.091, 'socrates', 18], [.110, 'glaucon', 3], [.112, 'socrates', 8],
+  [.119, 'glaucon', 4], [.123, 'socrates', 3], [.240, 'russell', 13], [.291, 'zenon', 2],
+  [.315, 'russell', 10], [.425, 'wiki', 8], [.463, 'socrates', 9], [.481, 'glaucon', 3],
+  [.620, 'socrates', 12], [.634, 'glaucon', 3], [.652, 'socrates', 7],
+];
+QS.forEach(([f, who, len]) => {
+  const [x1, y1] = pt(TICK_R, f), [x2, y2] = pt(TICK_R - len, f);
+  add(`<line class="q-tick" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="var(--${who})"></line>`);
+});
+
+// the 25-minute mark: the whole reason this direction exists
+add(`<line class="over-mark" x1="0" y1="${-R - 18}" x2="0" y2="${-R + 18}"></line>`);
+
+// the hand
+let handF = .436;
+const hand = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+ring.appendChild(hand);
+function drawHand() {
+  const [x, y] = pt(R + 4, handF);
+  hand.innerHTML = `<line class="hand" x1="0" y1="0" x2="${x}" y2="${y}"></line>
+                    <circle class="hand-cap" cx="${x}" cy="${y}" r="3.4"></circle>`;
+}
+drawHand();
+
+// waveform for the unrolled take
+document.getElementById('wv').innerHTML =
+  Array.from({ length: 200 }, () => `<b style="height:${5 + Math.random() * 62}px"></b>`).join('');
+
+// the signature: an arc selected in the editor straightens, and curls back
+const centre = document.getElementById('centre');
+const unrolled = document.getElementById('unrolled');
+let open = false;
+document.getElementById('unroll').onclick = () => {
+  open = !open;
+  unrolled.classList.toggle('on', open);
+  centre.style.opacity = open ? '0' : '1';
+  centre.style.transition = 'opacity .35s ease';
+};
+
+// the hand advances; the ring never moves
+setInterval(() => { handF = (handF + .0004) % 1; drawHand(); }, 100);
+</script>
+</body>
+</html>

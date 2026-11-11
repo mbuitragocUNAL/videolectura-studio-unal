@@ -1,0 +1,9 @@
+frontend/node_modules
+frontend/.nuxt
+frontend/.output
+data
+design
+web
+lecturas
+preparar/.venv
+libros

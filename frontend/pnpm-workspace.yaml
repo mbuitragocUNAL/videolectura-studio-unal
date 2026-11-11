@@ -1,0 +1,10 @@
+# Which dependencies may run their install scripts. pnpm 11 reads this map of
+# booleans — not `onlyBuiltDependencies`, and not the `pnpm` field in
+# package.json — and refuses to finish an install until the ones it detects are
+# declared here.
+#
+# Both are legitimate: esbuild fetches a native binary and vue-demi generates a
+# compat shim, and Vite will not start without either.
+allowBuilds:
+  esbuild: true
+  vue-demi: true

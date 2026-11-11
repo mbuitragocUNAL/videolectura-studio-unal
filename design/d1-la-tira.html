@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>1 · La tira</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Martian+Mono:wght@300;400;500;600&family=STIX+Two+Text:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --dark:     #1b1917;   /* warm dark, never pure black */
+    --dark-2:   #241f1c;
+    --rule:     #37302b;
+    --label:    #8b8076;
+    --faint:    #5d544d;
+    --paper:    #fbfaf7;   /* the scanned page's own white */
+    --paper-ink:#17150f;
+    --rec:      #d8412f;
+    --socrates: #b8862f;   /* old ochre */
+    --glaucon:  #c8bb7a;   /* pale straw */
+    --russell:  #5f7a96;   /* slate blue */
+    --whitehead:#7d2f2a;   /* deep oxblood */
+    --wiki:     #8a857e;
+    --zenon:    #a8392b;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--dark); color: #e8e2db;
+    font: 400 13px/1.5 "Martian Mono", monospace;
+    height: 100vh; overflow: hidden;
+    display: grid; grid-template-rows: auto 1fr;
+  }
+  .mono { font-family: "Martian Mono", monospace; font-variant-numeric: tabular-nums; }
+  .lbl {
+    font: 400 9.5px/1 "Martian Mono", monospace;
+    letter-spacing: .08em; text-transform: uppercase; color: var(--label);
+  }
+
+  /* ---- bar ---- */
+  .bar {
+    display: flex; align-items: center; gap: 20px;
+    padding: 11px 18px; border-bottom: 1px solid var(--rule);
+  }
+  .rec-dot {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--rec);
+    animation: b 1.3s steps(1) infinite;
+  }
+  @keyframes b { 50% { opacity: .25; } }
+  .zooms { display: flex; gap: 1px; margin-left: auto; }
+  .z {
+    font: 400 10px/1 "Martian Mono", monospace; letter-spacing: .06em;
+    color: var(--label); background: none; border: 1px solid transparent;
+    padding: 7px 11px; cursor: pointer; text-transform: uppercase;
+  }
+  .z:hover { color: #e8e2db; }
+  .z.on { color: var(--dark); background: #e8e2db; font-weight: 500; }
+  .num { font: 500 15px/1 "Martian Mono", monospace; }
+  .num small { font-size: 10px; color: var(--label); }
+
+  /* ---- stage: one column, three magnifications ---- */
+  .stage { position: relative; overflow: hidden; }
+
+  /* the fixed reading line — the strip moves under it, this never does */
+  #hair {
+    position: absolute; left: 0; right: 0; top: 38%;
+    border-top: 1px solid rgba(232,226,219,.75);
+    z-index: 6; pointer-events: none;
+  }
+  #hair.voice { border-top-style: dotted; border-top-color: var(--socrates); }
+  #hair::after {
+    content: attr(data-note); position: absolute; right: 14px; top: 5px;
+    font: 400 9px/1 "Martian Mono", monospace; letter-spacing: .1em;
+    color: var(--socrates); text-transform: uppercase;
+  }
+
+  /* the column itself */
+  #col {
+    position: absolute; left: 50%; top: 0;
+    transform-origin: 50% 0;
+    will-change: transform;
+  }
+  .page {
+    background: var(--paper); color: var(--paper-ink);
+    font-family: "STIX Two Text", Georgia, serif;
+    width: 640px; padding: 30px 46px;
+  }
+  .page.dim { filter: brightness(.66); }
+  .ln {
+    font-size: 21px; line-height: 1.45; white-space: pre;
+    position: relative; padding-left: 4px;
+  }
+  .ln.head { font-style: italic; text-align: center; padding: 14px 0 8px; }
+  .band { background: color-mix(in srgb, var(--c) 22%, transparent); }
+  .cue-tag {
+    position: absolute; left: -146px; top: 2px;
+    font: 500 9.5px/1 "Martian Mono", monospace; letter-spacing: .06em;
+    color: var(--c); text-transform: uppercase; white-space: nowrap;
+  }
+
+  /* at low magnification the text becomes rules, like a page thumbnail */
+  .rules { display: none; padding: 10px 46px; }
+  .rules i { display: block; height: 1px; background: #d8d2c8; margin: 3px 0; }
+  .lowzoom .page .ln { display: none; }
+  .lowzoom .page .rules { display: block; }
+  .lowzoom .page { background: #2b2521; }
+  .lowzoom .rules i { background: #453c35; }
+
+  /* takes: vertical bands beside the strip, waveform along the text */
+  .takes { position: absolute; left: 660px; top: 0; display: none; }
+  .lowzoom .takes { display: block; }
+  .take {
+    position: absolute; width: 56px; border-radius: 2px;
+    background: #2a2420; border: 1px solid #3a322c;
+    overflow: hidden;
+  }
+  .take.on { border-color: var(--socrates); background: #2f271d; }
+  .take .wv { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; gap: 1px; }
+  .take .wv b { display: block; margin: 0 auto; background: #5d544d; height: 1px; }
+  .take.on .wv b { background: var(--socrates); }
+  .take .nm {
+    position: absolute; top: 3px; left: 4px;
+    font: 400 8px/1 "Martian Mono", monospace; color: var(--label);
+  }
+  .notch {
+    position: absolute; left: 660px; width: 56px;
+    background: repeating-linear-gradient(45deg, rgba(216,65,47,.25) 0 4px, transparent 4px 8px);
+    border-top: 1px solid var(--rec); border-bottom: 1px solid var(--rec);
+    display: none;
+  }
+  .lowzoom .notch { display: block; }
+
+  /* coverage column at 1:40 */
+  .cover { position: absolute; left: 606px; width: 8px; top: 0; display: none; }
+  .tinyzoom .cover { display: block; }
+  .cover i { position: absolute; left: 0; right: 0; background: #4a4039; }
+  .cover i.has { background: #8b8076; }
+  .cover i.rendered { background: var(--socrates); }
+
+  /* ---- footer strip: what the zoom is showing ---- */
+  .foot {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    padding: 10px 18px; border-top: 1px solid var(--rule);
+    background: linear-gradient(180deg, transparent, var(--dark) 40%);
+    display: flex; gap: 26px; align-items: center;
+  }
+  .keys { display: flex; gap: 6px; margin-left: auto; }
+  .k {
+    font: 400 10px/1 "Martian Mono", monospace; color: #e8e2db;
+    background: var(--dark-2); border: 1px solid var(--rule);
+    padding: 7px 10px; cursor: pointer; letter-spacing: .05em;
+  }
+  .k b { color: var(--faint); font-weight: 400; margin-left: 6px; }
+  .k.stop { color: #f0b8b0; border-color: #4d2a25; background: #2b1a17; }
+  .hint { font: 400 10.5px/1.5 "Martian Mono", monospace; color: var(--faint); max-width: 430px; }
+
+  /* the level meter reads as a hairline that breathes */
+  .meter { width: 120px; height: 2px; background: var(--rule); position: relative; }
+  .meter b { position: absolute; inset: 0 auto 0 0; background: var(--glaucon); }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <span class="rec-dot"></span>
+  <span class="lbl">Toma 4 · Alegoría de la caverna</span>
+  <span class="num">04:11</span>
+  <span class="lbl">de</span>
+  <span class="num">22:51 <small>proyección</small></span>
+  <div class="zooms">
+    <button class="z on" data-z="1">1:1 · leer</button>
+    <button class="z" data-z="8">1:8 · montar</button>
+    <button class="z" data-z="40">1:40 · toda la tira</button>
+  </div>
+</div>
+
+<div class="stage" id="stage">
+  <div id="hair" data-note=""></div>
+  <div id="col">
+    <div class="page" id="page"></div>
+    <div class="cover" id="cover"></div>
+    <div class="takes" id="takes"></div>
+  </div>
+
+  <div class="foot">
+    <div>
+      <div class="lbl">Línea</div>
+      <div class="num" id="lineno">34</div>
+    </div>
+    <div>
+      <div class="lbl">Voz</div>
+      <div class="meter"><b style="width:58%"></b></div>
+    </div>
+    <div class="hint" id="hint">
+      La tira son las doce páginas unidas: 21.856 px. Todo —una línea, una cita,
+      una toma, un corte— es un lugar sobre ella.
+    </div>
+    <div class="keys">
+      <button class="k stop">Detener<b>S</b></button>
+      <button class="k">Sonar cita 07<b>N</b></button>
+      <button class="k">Lámina<b>L</b></button>
+      <button class="k">Montar<b>M</b></button>
+    </div>
+  </div>
+</div>
+
+<script>
+// A slice of the real passage, with its own line numbers and the quote bands.
+const LINES = [
+  [30, 'Sócrates describe la caverna a Glaucón, el hermano'],
+  [31, 'mayor de Platón, que también fue estudiante de Sócrates.'],
+  [32, 'Este escenario, así como el reparto de personajes,'],
+  [33, 'subrayan la importancia central de la caverna'],
+  [34, 'en el pensamiento de Platón.'],
+  [35, '     Así lo introduce:'],
+  [36, 'Y ahora, dije, déjame mostrar en una figura hasta dónde', 'socrates', 'Sócrates · 46,5 s'],
+  [37, '  está iluminada u oscura nuestra naturaleza: ¡Aquí está!', 'socrates'],
+  [38, '  Seres humanos que viven en una guarida subterránea,', 'socrates'],
+  [39, '  que tiene una boca abierta hacia la luz y que alcanza', 'socrates'],
+  [40, '  todo lo largo de la guarida; han estado ahí desde niños,', 'socrates'],
+  [41, '  y tienen encadenadas las piernas y el cuello de manera', 'socrates'],
+  [42, '  que no se pueden mover, y solo pueden mirar delante.', 'socrates'],
+  [43, '', 'socrates'],
+  [44, '  pantalla que tienen delante los titiriteros.', 'socrates'],
+  [45, 'Glaucón. Lo veo.', 'glaucon', 'Glaucón · 1,0 s'],
+  [46, 'Y ahora, ¿puedes ver, dije, hombres que pasan a lo largo', 'socrates', 'Sócrates · 15,2 s'],
+  [47, '  de la pared llevando toda clase de vasijas, y estatuas', 'socrates'],
+  [48, '  y figuras de animales hechas de madera y piedra?', 'socrates'],
+  [49, 'Me has mostrado una extraña imagen, y esos son unos', 'glaucon', 'Glaucón · 4,3 s'],
+  [50, '  extraños prisioneros.', 'glaucon'],
+  [51, 'Como nosotros.', 'socrates', 'Sócrates · 1,1 s'],
+  [52, ''],
+  [53, '     El argumento es simple y claro: los prisioneros ven'],
+  [54, 'una proyección de la realidad, no la realidad misma.'],
+  [55, 'Como la proyección es todo lo que conocen, la dan por'],
+  [56, 'hecha. Es su mundo. Pero nosotros no debemos sentirnos'],
+  [57, 'superiores a esos prisioneros ignorantes, porque nuestra'],
+  [58, 'propia situación no es diferente, según Sócrates.'],
+];
+
+const page = document.getElementById('page');
+page.innerHTML = LINES.map(([n, t, who, tag]) => {
+  const style = who ? `--c:var(--${who})` : '';
+  const label = tag ? `<span class="cue-tag">▶ N · ${tag}</span>` : '';
+  return `<div class="ln ${who ? 'band' : ''}" data-n="${n}" style="${style}">${label}${t || ' '}</div>`;
+}).join('') + `<div class="rules">${
+  Array.from({ length: 46 }, () => `<i style="width:${72 + Math.random() * 26}%"></i>`).join('')
+}</div>`;
+
+// Takes lie beside the strip, spanning the lines they were recorded over.
+const takes = document.getElementById('takes');
+const TAKES = [
+  ['t1', 0, 210], ['t2', 214, 190], ['t3', 408, 240], ['t4', 652, 300, true], ['t5', 956, 180],
+];
+takes.innerHTML = TAKES.map(([nm, top, h, on]) => {
+  const bars = Array.from({ length: Math.round(h / 4) },
+    () => `<b style="width:${8 + Math.random() * 40}px"></b>`).join('');
+  return `<div class="take ${on ? 'on' : ''}" style="top:${top}px;height:${h}px">
+            <div class="wv">${bars}</div><span class="nm">${nm}</span></div>`;
+}).join('');
+takes.insertAdjacentHTML('beforeend', '');
+document.getElementById('col').insertAdjacentHTML('beforeend',
+  '<div class="notch" style="top:790px;height:44px"></div>');
+
+// Coverage: which lines of the passage a take already covers.
+const cover = document.getElementById('cover');
+cover.innerHTML = [[0, 210, 'has rendered'], [214, 190, 'has rendered'], [408, 240, 'has'],
+  [652, 300, 'has'], [956, 180, 'has'], [1140, 260, '']]
+  .map(([t, h, c]) => `<i class="${c}" style="top:${t}px;height:${h - 2}px"></i>`).join('');
+
+// ---- the zoom is the whole idea: same column, pulled back ----
+const stage = document.getElementById('stage');
+const col = document.getElementById('col');
+const hair = document.getElementById('hair');
+let zoom = 1, anchorF = 0.105;   // position on the strip, not in pixels
+
+const HINTS = {
+  1:  'La tira son las doce páginas unidas: 21.856 px. Todo —una línea, una cita, una toma, un corte— es un lugar sobre ella.',
+  8:  'Misma columna, ocho veces más lejos. El texto se vuelve renglones y las tomas aparecen al lado, con su onda tendida contra lo que estabas leyendo. Para empalmar, señalas una línea.',
+  40: 'Toda la lectura de una vez. La columna de la izquierda es la cobertura: qué líneas ya tienen toma, cuáles no. El render la va llenando de arriba abajo.',
+};
+
+function apply() {
+  const scale = 1 / zoom;
+  const h = col.scrollHeight;
+  const y = stage.clientHeight * 0.38 - anchorF * h * scale;
+  col.style.transform = `translateX(-50%) translateY(${y}px) scale(${scale})`;
+  col.style.transformOrigin = '50% 0';
+  document.body.classList.toggle('lowzoom', zoom >= 8);
+  document.body.classList.toggle('tinyzoom', zoom >= 40);
+  document.getElementById('hint').textContent = HINTS[zoom];
+}
+
+document.querySelectorAll('.z').forEach((b) => {
+  b.onclick = () => {
+    document.querySelectorAll('.z').forEach((x) => x.classList.remove('on'));
+    b.classList.add('on');
+    zoom = Number(b.dataset.z);
+    apply();
+  };
+});
+apply();
+window.addEventListener('resize', apply);
+
+// A quotation takes the wheel: the hairline goes dotted and the strip glides
+// from the group's first line to its last in exactly the audio's duration.
+let voicing = false;
+function fireQuote() {
+  if (voicing) return;
+  voicing = true;
+  hair.classList.add('voice');
+  hair.dataset.note = 'la voz lleva el scroll';
+  const from = anchorF, to = 0.33, t0 = performance.now(), ms = 6000;
+  (function step(now) {
+    const p = Math.min(1, (now - t0) / ms);
+    anchorF = from + (to - from) * p;
+    apply();
+    if (p < 1) requestAnimationFrame(step);
+    else {
+      hair.classList.remove('voice');
+      hair.dataset.note = '';
+      voicing = false;
+    }
+  })(t0);
+}
+document.querySelectorAll('.k')[1].onclick = fireQuote;
+addEventListener('keydown', (e) => {
+  if (e.key === 'n' || e.key === 'N') fireQuote();
+  if (e.key === '1') document.querySelectorAll('.z')[0].click();
+  if (e.key === '2') document.querySelectorAll('.z')[1].click();
+  if (e.key === '3') document.querySelectorAll('.z')[2].click();
+});
+
+// Idle drift, so the fixed hairline / moving strip relationship is legible.
+setInterval(() => {
+  if (!voicing && zoom === 1) { anchorF = Math.min(0.5, anchorF + 0.0006); apply(); }
+}, 90);
+</script>
+</body>
+</html>
