@@ -1,0 +1,29 @@
+Videolectura Studio UNAL · Paso 2 de 6: Preparar la lectura
+
+Universidad Nacional de Colombia · Modelos Estocásticos y Simulación · ME01
+
+Cómo decirle al estudio qué parte del libro vas a leer: elegir el libro y el capítulo desde su índice, marcar con un clic dónde empieza y termina la lectura, revisar las figuras y láminas que encontró, fijar una figura en los párrafos que hablan de ella, agregar las citas con su personaje y llenar los datos del video.
+
+Paso a paso, por escrito: https://github.com/mbuitragocUNAL/videolectura-studio-unal/blob/main/docs/2-preparar.md
+El repositorio: https://github.com/mbuitragocUNAL/videolectura-studio-unal
+La guía general (2:37): https://youtu.be/NcUtmzC_DAw
+
+LOS SEIS PASOS
+1. Instalar y abrir
+2. Preparar la lectura
+3. Voces y música
+4. Grabar
+5. Montar y renderizar
+6. Entregar
+
+Videolectura Studio es libre y está abierto a quien quiera mejorarlo: ideas, problemas y código en https://github.com/mbuitragocUNAL/videolectura-studio-unal/blob/main/CONTRIBUTING.md
+No es una herramienta oficial de la Universidad Nacional de Colombia.
+
+CRÉDITOS
+Narración con voz sintética de ElevenLabs (https://elevenlabs.io).
+Video hecho con HyperFrames (https://github.com/heygen-com/hyperframes).
+
+MÚSICA
+"Bossa Antigua" Kevin MacLeod (incompetech.com)
+Licensed under Creative Commons: By Attribution 4.0
+https://creativecommons.org/licenses/by/4.0/

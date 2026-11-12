@@ -1,0 +1,29 @@
+Videolectura Studio UNAL · Paso 5 de 6: Montar y renderizar
+
+Universidad Nacional de Colombia · Modelos Estocásticos y Simulación · ME01
+
+El montaje opcional para recortar tropiezos, y el render: cómo el estudio escucha cada toma, recorta las pausas, iguala el volumen y compone la imagen, con el texto corriendo con la voz y las figuras apareciendo con su pie al leerlo. Y qué revisar antes de entregar.
+
+Paso a paso, por escrito: https://github.com/mbuitragocUNAL/videolectura-studio-unal/blob/main/docs/5-montar-y-renderizar.md
+El repositorio: https://github.com/mbuitragocUNAL/videolectura-studio-unal
+La guía general (2:37): https://youtu.be/NcUtmzC_DAw
+
+LOS SEIS PASOS
+1. Instalar y abrir
+2. Preparar la lectura
+3. Voces y música
+4. Grabar
+5. Montar y renderizar
+6. Entregar
+
+Videolectura Studio es libre y está abierto a quien quiera mejorarlo: ideas, problemas y código en https://github.com/mbuitragocUNAL/videolectura-studio-unal/blob/main/CONTRIBUTING.md
+No es una herramienta oficial de la Universidad Nacional de Colombia.
+
+CRÉDITOS
+Narración con voz sintética de ElevenLabs (https://elevenlabs.io).
+Video hecho con HyperFrames (https://github.com/heygen-com/hyperframes).
+
+MÚSICA
+"Bossa Antigua" Kevin MacLeod (incompetech.com)
+Licensed under Creative Commons: By Attribution 4.0
+https://creativecommons.org/licenses/by/4.0/

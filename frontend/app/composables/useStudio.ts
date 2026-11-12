@@ -371,9 +371,24 @@ export const useStudio = () => {
     return P[lo]!
   }
 
+  /**
+   * The takes the video is made of: the newest of each paragraph (and of each
+   * plate), as the render picks them. Re-reading a paragraph leaves the old
+   * take on disk, and counting it too made a 18-minute reading show 28.
+   */
+  const inUse = computed(() => {
+    const newest = new Map<string, Take>()
+    for (const t of takes.value) {
+      const key = `${t.paragraph}|${t.plate ? 1 : 0}|${(t as any).figure ?? ''}`
+      const seen = newest.get(key)
+      if (!seen || seen.id < t.id) newest.set(key, t)
+    }
+    return [...newest.values()]
+  })
+
   /** Total runtime once every cut is applied — the number the rules care about. */
   const keptSeconds = computed(() =>
-    takes.value.reduce((total, t) => {
+    inUse.value.reduce((total, t) => {
       const removed = (t.cuts ?? []).reduce((s, c) => s + (c.to - c.from), 0)
       return total + Math.max(0, t.duration - removed)
     }, 0),

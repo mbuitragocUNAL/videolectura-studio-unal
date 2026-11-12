@@ -39,3 +39,10 @@ web/
 .DS_Store
 frontend/dist
 guia/youtube/*.png
+guia/compartido/
+guia/pasos/*/video/assets/
+guia/pasos/*/video/renders/
+guia/pasos/*/video/.hyperframes/
+guia/pasos/*/*.mp4
+guia/**/.thumbnails/
+guia/**/.waveform-cache/

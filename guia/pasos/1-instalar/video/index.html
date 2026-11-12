@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="es" data-resolution="landscape">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=1920, height=1080" />
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<style>
+@font-face { font-family: Plex; src: url(assets/marca/IBMPlexSans-Regular.ttf); font-weight: 400; }
+@font-face { font-family: Plex; src: url(assets/marca/IBMPlexSans-Medium.ttf); font-weight: 500; }
+@font-face { font-family: Plex; src: url(assets/marca/IBMPlexSans-SemiBold.ttf); font-weight: 600; }
+:root { --fondo: #10131A; --tinta: #ECE6D8; --apagado: #8A8F9C; --dorado: #F2B84B;
+  --c0: #5DA9E9; --c1: #F2B84B; --c2: #A78BFA; --c3: #4FC1A6; --c4: #E8706A; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 1920px; height: 1080px; overflow: hidden; background: var(--fondo); }
+#root { position: relative; width: 100%; height: 100%; font-family: Plex, sans-serif; color: var(--tinta); }
+#nube { position: absolute; inset: 0; }
+.escena { position: absolute; inset: 0; }
+.sello { position: absolute; left: 80px; top: 64px; display: flex; gap: 28px; align-items: center; }
+.sello img { height: 92px; }
+.espaciado { letter-spacing: 0.32em; font-size: 22px; font-weight: 500; color: var(--apagado); }
+.apagado { color: var(--apagado); font-size: 28px; margin-top: 6px; }
+.kicker { letter-spacing: 0.28em; font-size: 30px; font-weight: 500; color: var(--dorado); }
+.portada { position: absolute; left: 112px; top: 320px; }
+.portada h1 { font-size: 132px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.05; margin-top: 18px; }
+.barra { display: flex; gap: 8px; margin: 34px 0 30px; }
+.barra i { width: 112px; height: 10px; display: block; }
+.lema { font-size: 40px; color: var(--apagado); max-width: 1500px; }
+.encabezado { position: absolute; left: 80px; top: 70px; }
+.encabezado h2 { font-size: 64px; font-weight: 600; margin-top: 10px; letter-spacing: -0.01em; }
+.reglas { position: absolute; left: 112px; top: 290px; list-style: none; display: grid; gap: 30px; max-width: 1700px; }
+.reglas li { font-size: 42px; display: flex; align-items: center; gap: 30px; opacity: 0; }
+.cod { font-size: 26px; font-weight: 600; color: var(--fondo); padding: 6px 16px; border-radius: 8px; min-width: 92px; text-align: center; flex: none; }
+.punto { width: 18px; height: 18px; border-radius: 50%; flex: none; }
+.veredicto { position: absolute; left: 112px; top: 900px; font-size: 38px; color: var(--dorado); opacity: 0; }
+.chips { position: absolute; left: 80px; top: 250px; display: flex; gap: 16px; flex-wrap: wrap; }
+.chip { font-size: 30px; padding: 10px 24px; border: 2px solid #2b323b; border-radius: 999px; background: #161a22; opacity: 0; }
+.terminal { position: absolute; left: 80px; width: 1760px; background: #0a0c10; border: 2px solid #2b323b;
+  border-radius: 18px; padding: 34px 44px 44px; font-family: Menlo, monospace; font-size: 38px; line-height: 1.75; }
+.puntos { display: flex; gap: 12px; margin-bottom: 18px; }
+.puntos i { width: 18px; height: 18px; border-radius: 50%; background: #2b323b; display: block; }
+.tl { opacity: 0; white-space: pre; display: flex; }
+.pr { color: var(--c3); }
+.tx { display: inline-block; overflow: hidden; white-space: pre; vertical-align: bottom; }
+.marco { position: absolute; left: 600px; top: 200px; width: 1244px; height: 700px; overflow: hidden;
+  border-radius: 16px; border: 2px solid #2b323b; background: #0d0f12; box-shadow: 0 30px 80px rgba(0,0,0,.45); }
+.captura { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; }
+.pasos, .teclas, .rotulos { position: absolute; left: 80px; top: 250px; width: 470px; list-style: none; display: grid; gap: 26px; }
+.pasos li { font-size: 32px; display: flex; gap: 20px; align-items: center; }
+.pasos span { width: 50px; height: 50px; border-radius: 50%; background: var(--dorado); color: var(--fondo);
+  display: grid; place-items: center; font-weight: 600; font-size: 26px; flex: none; }
+.teclas li { font-size: 32px; display: flex; gap: 22px; align-items: center; opacity: 0; }
+kbd { font-family: Plex, sans-serif; font-weight: 600; font-size: 28px; min-width: 64px; padding: 8px 16px; text-align: center;
+  border: 2px solid var(--dorado); color: var(--dorado); border-radius: 10px; background: #161a22; flex: none; }
+.nota { position: absolute; left: 80px; top: 780px; width: 470px; font-size: 28px; color: var(--apagado); opacity: 0; }
+.rotulos li { font-size: 30px; padding-left: 22px; border-left: 6px solid var(--c); opacity: 0; line-height: 1.25; }
+.fragmento { position: absolute; left: 602px; top: 202px; width: 1240px; height: 696px; object-fit: cover; border-radius: 14px; z-index: 5; }
+.miniatura { position: absolute; left: 80px; top: 250px; width: 960px; border-radius: 14px; border: 2px solid #2b323b; opacity: 0; }
+.entrega { position: absolute; left: 1100px; top: 260px; width: 740px; display: grid; gap: 26px; }
+.bloque { font-size: 32px; line-height: 1.35; padding: 20px 26px; background: #161a22; border: 2px solid #2b323b; border-radius: 14px; opacity: 0; }
+.cierre { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.cierre .barra { justify-content: center; }
+.escudo-grande { height: 130px; margin-bottom: 36px; }
+.repo { font-family: Menlo, monospace; font-size: 50px; margin-top: 26px; }
+.doc { font-family: Menlo, monospace; font-size: 34px; color: var(--apagado); margin-top: 14px; }
+</style>
+</head>
+<body>
+<div id="root" data-composition-id="main" data-start="0" data-duration="78.75" data-width="1920" data-height="1080">
+<canvas id="nube" width="1920" height="1080"></canvas>
+<section id="e1" class="clip escena" data-start="0.0" data-duration="7.62" data-track-index="1">
+  <div class="sello"><img src="assets/marca/escudo-unal-blanco.png" alt="">
+    <div><div class="espaciado">VIDEOLECTURA STUDIO · UNAL</div>
+    <div class="apagado">Modelos Estocásticos y Simulación · ME01</div></div></div>
+  <div class="portada">
+    <div class="kicker" id="p1-a">PASO 1 DE 6</div>
+    <h1 id="p1-b">Instalar y abrir</h1>
+    <div id="p1-c"><div class="barra"><i style="background:var(--c0)"></i><i style="background:var(--c1)"></i><i style="background:var(--c2)"></i><i style="background:var(--c3)"></i><i style="background:var(--c4)"></i></div></div>
+    <p class="lema" id="p1-d">Unos minutos, y solo la primera vez.</p>
+  </div></section>
+<section id="e2" class="clip escena" data-start="7.62" data-duration="19.28" data-track-index="1"><div class="encabezado"><div class="kicker">LO QUE NECESITAS</div><h2>Cinco cosas</h2></div><ul class="reglas"><li id="l2-0"><span class="punto" style="background:var(--c0)"></span>Docker: corre todo el estudio</li><li id="l2-1"><span class="punto" style="background:var(--c1)"></span>Google Chrome, para grabar</li><li id="l2-2"><span class="punto" style="background:var(--c2)"></span>Unos 6 GB libres</li><li id="l2-3"><span class="punto" style="background:var(--c3)"></span>El PDF del libro, con texto seleccionable</li><li id="l2-4"><span class="punto" style="background:var(--c4)"></span>Audífonos, para oír las citas</li></ul></section>
+<section id="e3" class="clip escena" data-start="26.9" data-duration="17.05" data-track-index="1"><div class="encabezado"><div class="kicker">INSTALAR</div><h2>Tres comandos</h2></div><div class="chips"><span class="chip" id="ch3-0">Windows: desde WSL</span></div><div class="terminal" style="top:380px"><div class="puntos"><i></i><i></i><i></i></div><div class="tl" id="t3-0"><span class="pr">$ </span><span class="tx" id="tx3-0">git clone https://github.com/mbuitragocUNAL/videolectura-studio-unal</span></div><div class="tl" id="t3-1"><span class="pr">$ </span><span class="tx" id="tx3-1">cd videolectura-studio-unal</span></div><div class="tl" id="t3-2"><span class="pr">$ </span><span class="tx" id="tx3-2">./estudio abrir</span></div><div class="tl" id="t3-3"><span class="pr"></span><span class="tx" id="tx3-3">  Estudio en http://localhost:8100</span></div></div></section>
+<section id="e4" class="clip escena" data-start="43.95" data-duration="11.9" data-track-index="1"><div class="encabezado"><div class="kicker">ABRIR</div><h2>localhost:8100</h2></div><ul class="rotulos"><li id="s4-0" style="--c:var(--c0)">Abre en Chrome</li><li id="s4-1" style="--c:var(--c1)">Sin lecturas todavía</li><li id="s4-2" style="--c:var(--c2)">Sigue: Nueva lectura</li></ul><div class="marco"><img id="c4-0" class="captura" src="assets/capturas/vacio-lecturas.png" alt=""></div></section>
+<section id="e5" class="clip escena" data-start="55.85" data-duration="13.89" data-track-index="1"><div class="encabezado"><div class="kicker">EL DÍA A DÍA</div><h2>Apagar y actualizar</h2></div><div class="terminal" style="top:280px"><div class="puntos"><i></i><i></i><i></i></div><div class="tl" id="t5-0"><span class="pr">$ </span><span class="tx" id="tx5-0">./estudio cerrar</span></div><div class="tl" id="t5-1"><span class="pr"></span><span class="tx" id="tx5-1">  # tus lecturas y tomas quedan en lecturas/</span></div><div class="tl" id="t5-2"><span class="pr">$ </span><span class="tx" id="tx5-2">git pull</span></div><div class="tl" id="t5-3"><span class="pr">$ </span><span class="tx" id="tx5-3">./estudio abrir</span></div></div></section>
+<section id="e6" class="clip escena" data-start="69.74" data-duration="8.41" data-track-index="1">
+  <div class="cierre">
+    <img src="assets/marca/escudo-unal-blanco.png" class="escudo-grande" alt="">
+    <div class="kicker" id="z6-a">SIGUIENTE · PREPARAR LA LECTURA</div>
+    <div class="repo" id="z6-b">github.com/mbuitragocUNAL/videolectura-studio-unal</div>
+    <div class="doc" id="z6-c">docs/1-instalar.md</div>
+    <div class="barra"><i style="background:var(--c0)"></i><i style="background:var(--c1)"></i><i style="background:var(--c2)"></i><i style="background:var(--c3)"></i><i style="background:var(--c4)"></i></div>
+    <p class="lema" id="z6-d">Hecho por estudiantes · abierto a quien quiera mejorarlo</p>
+  </div></section>
+<audio id="narracion-1" src="assets/narracion/escena-1.wav" data-start="0.5" data-duration="6.22" data-track-index="3"></audio>
+<audio id="narracion-2" src="assets/narracion/escena-2.wav" data-start="8.12" data-duration="17.88" data-track-index="3"></audio>
+<audio id="narracion-3" src="assets/narracion/escena-3.wav" data-start="27.4" data-duration="15.65" data-track-index="3"></audio>
+<audio id="narracion-4" src="assets/narracion/escena-4.wav" data-start="44.45" data-duration="10.5" data-track-index="3"></audio>
+<audio id="narracion-5" src="assets/narracion/escena-5.wav" data-start="56.35" data-duration="12.49" data-track-index="3"></audio>
+<audio id="narracion-6" src="assets/narracion/escena-6.wav" data-start="70.24" data-duration="7.01" data-track-index="3"></audio>
+<audio id="musica" src="assets/musica/bossa-antigua.mp3" data-start="0" data-duration="78.75" data-volume="0.55" data-fade-in="1.5" data-fade-out="3" loop data-track-index="4"></audio>
+</div>
+<script>
+(function () {
+  const c = document.getElementById("nube").getContext("2d");
+  let s = 22;
+  const r = () => (s = (s * 1103515245 + 12345) % 2147483648) / 2147483648;
+  const g = () => (r() + r() + r() - 1.5) / 1.5;
+  const centros = [[0.12, 0.2, 0.16], [0.86, 0.75, 0.18], [0.5, 1.0, 0.12]];
+  const colores = ["#5DA9E9", "#F2B84B", "#A78BFA", "#4FC1A6", "#E8706A"];
+  for (let i = 0; i < 520; i++) {
+    const [cx, cy, sp] = centros[i % 5 < 2 ? 0 : i % 5 < 4 ? 1 : 2];
+    const x = (cx + g() * sp) * 1920, y = (cy + g() * sp * 1.6) * 1080;
+    c.globalAlpha = 0.12 + r() * 0.3;
+    c.fillStyle = colores[Math.floor(r() * 5)];
+    c.beginPath(); c.arc(x, y, 1.2 + r() * 2.2, 0, Math.PI * 2); c.fill();
+  }
+})();
+const tl = gsap.timeline({ paused: true });
+tl.fromTo("#e1", {opacity: 0}, {opacity: 1, duration: 0.45, ease: "power2.out"}, 0.0);
+tl.to("#e1", {opacity: 0, duration: 0.35, ease: "power2.in"}, 7.27);
+tl.fromTo("#p1-a", {opacity: 0, y: 18}, {opacity: 1, y: 0, duration: 0.5, ease: "power3.out"}, 0.15);
+tl.fromTo("#p1-b", {opacity: 0, y: 18}, {opacity: 1, y: 0, duration: 0.5, ease: "power3.out"}, 0.37);
+tl.fromTo("#p1-c", {opacity: 0, y: 18}, {opacity: 1, y: 0, duration: 0.5, ease: "power3.out"}, 0.59);
+tl.fromTo("#p1-d", {opacity: 0, y: 18}, {opacity: 1, y: 0, duration: 0.5, ease: "power3.out"}, 0.81);
+tl.fromTo("#e2", {opacity: 0}, {opacity: 1, duration: 0.45, ease: "power2.out"}, 7.62);
+tl.to("#e2", {opacity: 0, duration: 0.35, ease: "power2.in"}, 26.55);
+tl.fromTo("#l2-0", {opacity: 0, x: -30}, {opacity: 1, x: 0, duration: 0.5, ease: "power3.out"}, 10.29);
+tl.fromTo("#l2-1", {opacity: 0, x: -30}, {opacity: 1, x: 0, duration: 0.5, ease: "power3.out"}, 14.8);
+tl.fromTo("#l2-2", {opacity: 0, x: -30}, {opacity: 1, x: 0, duration: 0.5, ease: "power3.out"}, 16.83);
+tl.fromTo("#l2-3", {opacity: 0, x: -30}, {opacity: 1, x: 0, duration: 0.5, ease: "power3.out"}, 19.13);
+tl.fromTo("#l2-4", {opacity: 0, x: -30}, {opacity: 1, x: 0, duration: 0.5, ease: "power3.out"}, 22.92);
+tl.fromTo("#e3", {opacity: 0}, {opacity: 1, duration: 0.45, ease: "power2.out"}, 26.9);
+tl.to("#e3", {opacity: 0, duration: 0.35, ease: "power2.in"}, 43.6);
+tl.fromTo("#ch3-0", {opacity: 0, y: 18}, {opacity: 1, y: 0, duration: 0.5, ease: "power3.out"}, 39.35);
+tl.set("#t3-0", {opacity: 1}, 28.64);
+tl.fromTo("#tx3-0", {width: "0ch"}, {width: "69ch", duration: 1.4, ease: "steps(69)"}, 28.64);
+tl.set("#t3-1", {opacity: 1}, 30.34);
+tl.fromTo("#tx3-1", {width: "0ch"}, {width: "28ch", duration: 0.98, ease: "steps(28)"}, 30.34);
+tl.set("#t3-2", {opacity: 1}, 32.06);
+tl.fromTo("#tx3-2", {width: "0ch"}, {width: "16ch", duration: 0.56, ease: "steps(16)"}, 32.06);
+tl.set("#t3-3", {opacity: 1}, 34.15);
+tl.fromTo("#tx3-3", {width: "0ch"}, {width: "35ch", duration: 1.23, ease: "steps(35)"}, 34.15);
+tl.fromTo("#e4", {opacity: 0}, {opacity: 1, duration: 0.45, ease: "power2.out"}, 43.95);
+tl.to("#e4", {opacity: 0, duration: 0.35, ease: "power2.in"}, 55.5);
+tl.set("#c4-0", {x: 0.0, y: 0.1, scale: 0.6479166666666667, opacity: 1}, 43.95);
+tl.to("#c4-0", {x: 0.0, y: 0.1, scale: 0.6479166666666667, duration: 1.1, ease: "power2.inOut"}, 44.55);
+tl.to("#c4-0", {x: -593.0, y: 26.0, scale: 1.35, duration: 1.1, ease: "power2.inOut"}, 49.61);
+tl.fromTo("#s4-0", {opacity: 0, y: 0}, {opacity: 1, y: 0, duration: 0.5, ease: "power3.out"}, 47.84);
+tl.fromTo("#s4-1", {opacity: 0, y: 0}, {opacity: 1, y: 0, duration: 0.5, ease: "power3.out"}, 49.61);
+tl.fromTo("#s4-2", {opacity: 0, y: 0}, {opacity: 1, y: 0, duration: 0.5, ease: "power3.out"}, 53.2);
+tl.fromTo("#e5", {opacity: 0}, {opacity: 1, duration: 0.45, ease: "power2.out"}, 55.85);
+tl.to("#e5", {opacity: 0, duration: 0.35, ease: "power2.in"}, 69.39);
+tl.set("#t5-0", {opacity: 1}, 57.95);
+tl.fromTo("#tx5-0", {width: "0ch"}, {width: "17ch", duration: 0.6, ease: "steps(17)"}, 57.95);
+tl.set("#t5-1", {opacity: 1}, 61.99);
+tl.fromTo("#tx5-1", {width: "0ch"}, {width: "45ch", duration: 1.4, ease: "steps(45)"}, 61.99);
+tl.set("#t5-2", {opacity: 1}, 65.68);
+tl.fromTo("#tx5-2", {width: "0ch"}, {width: "9ch", duration: 0.32, ease: "steps(9)"}, 65.68);
+tl.set("#t5-3", {opacity: 1}, 66.83);
+tl.fromTo("#tx5-3", {width: "0ch"}, {width: "16ch", duration: 0.56, ease: "steps(16)"}, 66.83);
+tl.fromTo("#e6", {opacity: 0}, {opacity: 1, duration: 0.45, ease: "power2.out"}, 69.74);
+tl.to("#e6", {opacity: 0, duration: 0.35, ease: "power2.in"}, 77.8);
+tl.fromTo("#z6-a", {opacity: 0, y: 18}, {opacity: 1, y: 0, duration: 0.5, ease: "power3.out"}, 70.04);
+tl.fromTo("#z6-b", {opacity: 0, y: 18}, {opacity: 1, y: 0, duration: 0.5, ease: "power3.out"}, 70.54);
+tl.fromTo("#z6-c", {opacity: 0, y: 18}, {opacity: 1, y: 0, duration: 0.5, ease: "power3.out"}, 71.04);
+tl.fromTo("#z6-d", {opacity: 0, y: 18}, {opacity: 1, y: 0, duration: 0.5, ease: "power3.out"}, 71.54);
+window.__timelines = window.__timelines || {};
+window.__timelines["main"] = tl;
+tl.seek(0);
+</script>
+</body>
+</html>
