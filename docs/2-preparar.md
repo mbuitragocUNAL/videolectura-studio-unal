@@ -6,6 +6,26 @@ Preparar es decirle al estudio **qué parte del libro vas a leer**. Todo se elig
 mirando las páginas: a la derecha se ven con las líneas que encontró el
 análisis encima, y cada cambio se vuelve a analizar en uno o dos segundos.
 
+## Si tu lectura ya está precargada
+
+Las 32 lecturas del semestre de **Modelos Estocásticos y Simulación (MEXX)** ya
+vienen en `lecturas/`, transcritas del documento del profesor en
+[`cursos/MEXX.toml`](../cursos/MEXX.toml): páginas, dónde empieza y dónde termina
+cada una, y lo que el documento pide además (voces distintas en un diálogo, una
+nota obligatoria…), que el panel muestra arriba.
+
+1. Guarda el libro en `libros/` con el nombre
+   `Wilczek Frank - El Mundo Como Obra De Arte.pdf` (o elígelo en el paso 1 del panel).
+2. En **Lecturas**, busca la tuya y pulsa **Preparar**.
+3. Cambia el **grupo** por el tuyo (Datos del video), revisa figuras y citas, y
+   pulsa **Guardar y preparar**.
+
+Para otro curso, se transcribe su lista a `cursos/<CURSO>.toml` (ver
+`cursos/MEXX.toml`) y `./estudio precargar cursos/<CURSO>.toml` crea sus lecturas.
+Las que ya existen no se tocan, y una lectura preparada o con tomas nunca se reescribe.
+
+## Una lectura nueva
+
 En **Lecturas › Nueva lectura** (o «Preparar» en una que ya existe):
 
 ## Los pasos del panel

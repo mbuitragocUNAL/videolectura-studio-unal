@@ -26,6 +26,13 @@ cd videolectura-studio-unal
 Abre <http://localhost:8100> en Chrome. Necesitas **Docker** y **Google Chrome**;
 el resto corre en el contenedor.
 
+**Las 32 lecturas de Modelos Estocásticos (MEXX) ya vienen precargadas**, con sus
+páginas, dónde empieza y termina cada una y lo que pide el documento del profesor
+([`cursos/MEXX.toml`](cursos/MEXX.toml)). Guarda el libro en `libros/` como
+`Wilczek Frank - El Mundo Como Obra De Arte.pdf`, elige la tuya en **Lecturas**,
+pon tu grupo y prepárala. ¿Tienes la lista de otro curso, como Lenguajes de
+Programación? Transcríbela a `cursos/` ([cómo](docs/2-preparar.md#si-tu-lectura-ya-está-precargada)).
+
 ## Paso a paso
 
 ### 1 · Instalar y abrir
@@ -142,6 +149,7 @@ frontend/          la consola (Nuxt 4 + Nuxt UI)
 preparar/          lector.py (PDF → lectura), componer.py (texto compuesto),
                    alinear.py (Whisper), voz.py (voces), miniatura.py
 lecturas/          una carpeta por lectura; solo lectura.toml va a git
+cursos/            la lista de lecturas de cada curso (MEXX), para precargarlas
 guia/              los videos de la guía
 docs/              una página por paso y el manual técnico
 estudio            el atajo: nueva, preparar, abrir, cerrar, voces

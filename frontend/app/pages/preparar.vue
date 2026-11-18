@@ -12,13 +12,14 @@
  */
 import type { PDFDocumentProxy } from 'pdfjs-dist'
 import type { PageLine } from '~/components/PdfPage.vue'
-import { type Chapter, chaptersOf, cropOf, loadPdf } from '~/composables/usePdf'
+import { type Chapter, chaptersOf, cropOf, loadPdf, stackedCropOf } from '~/composables/usePdf'
 
 interface Linea { i: number; pag: number; t: string; tipo: string; p: number; x0: number; y0: number; x1: number; y1: number }
 interface Figura {
   id: string; nombre: string; pagina: number | null; encontrada: boolean; pie: string
   omitida: boolean; persistente: boolean; menciones: number[]; enLaTira: boolean
-  img?: number[]; imgPie?: number[]
+  img?: number[]; imgPie?: number[] | null
+  paginaImg?: number; pieCaja?: number[]
 }
 interface Analisis {
   titulo: string; libro: string; desde: number; hasta: number
@@ -311,8 +312,10 @@ watch([doc, () => analysis.value?.figuras], async () => {
   if (!d) return
   for (const f of analysis.value?.figuras ?? []) {
     const key = `${f.id}@${f.pagina}`
-    if (!f.encontrada || !f.pagina || !f.imgPie || crops[key]) continue
-    crops[key] = await cropOf(d, f.pagina, f.imgPie, 320).catch(() => '')
+    if (!f.encontrada || !f.pagina || crops[key]) continue
+    if (f.imgPie) crops[key] = await cropOf(d, f.pagina, f.imgPie, 320).catch(() => '')
+    else if (f.paginaImg && f.img && f.pieCaja)  // split across two pages
+      crops[key] = await stackedCropOf(d, f.paginaImg, f.img, f.pagina, f.pieCaja, 320).catch(() => '')
   }
 }, { immediate: true })
 
@@ -419,6 +422,9 @@ const fueraDeRango = (s: number) => s < 300 || s > 1500
         <UAlert v-if="saved" color="success" variant="subtle"
                 :title="`Preparada: ${saved.lineas} líneas, ${saved.figuras} figuras, ${saved.citas} citas`"
                 :description="saved.avisos.join(' · ') || 'lectura.toml escrito. Ya se puede grabar.'" />
+        <!-- What the course's reading list asks beyond the pages (cursos/*.toml). -->
+        <UAlert v-if="config.lectura.nota" color="primary" variant="subtle" icon="i-lucide-info" class="shrink-0"
+                title="Lo que pide el documento del curso" :description="config.lectura.nota" />
 
         <!-- 1. Libro -->
         <section>
@@ -508,7 +514,7 @@ const fueraDeRango = (s: number) => s < 300 || s > 1500
             <img v-if="crops[`${f.id}@${f.pagina}`]" :src="crops[`${f.id}@${f.pagina}`]" class="w-full rounded-[3px] mb-1.5 bg-white">
             <div class="text-[11.5px] text-score-dim mb-1.5">
               <template v-if="f.encontrada">
-                p. {{ f.pagina }}{{ f.enLaTira ? '' : ', fuera del pasaje' }} ·
+                p. {{ f.paginaImg && f.paginaImg !== f.pagina ? `${f.paginaImg}–${f.pagina}` : f.pagina }}{{ f.enLaTira ? '' : ', fuera del pasaje' }} ·
                 nombrada {{ f.menciones.length }} {{ f.menciones.length === 1 ? 'vez' : 'veces' }}
               </template>
               <span v-else class="text-[var(--ui-error)]">No encontré su pie. Indica la página del PDF:</span>

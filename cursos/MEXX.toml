@@ -1,0 +1,227 @@
+# Las 32 lecturas del semestre de Modelos Estocásticos y Simulación (MEXX),
+# transcritas del documento «MEXX Lecturas del semestre» del profesor.
+#
+#   ./estudio precargar cursos/MEXX.toml
+#
+# crea lecturas/NN-titulo/lectura.toml para cada una (las que ya existen no
+# se tocan) y busca en el PDF dónde empieza y dónde termina cada lectura.
+# Después, en http://localhost:8100/lecturas, eliges la tuya, cambias el grupo
+# por el tuyo y la preparas.
+#
+# Por lectura:
+#   paginas      las del PDF, no las impresas
+#   desde        el título de la sección con la que empieza (si no empieza al
+#                comienzo de la primera página)
+#   hasta_antes  el título de la sección siguiente: la lectura termina justo antes
+#   hasta_pie    la figura cuyo pie cierra la lectura («Figura 13»)
+#   nota         lo que el documento pide además, y que el estudio todavía no
+#                hace solo
+
+[curso]
+codigo = "ME"
+nombre = "Modelos Estocásticos y Simulación"
+libro = "Wilczek Frank - El Mundo Como Obra De Arte.pdf"   # en libros/
+fuente = "MEXX Lecturas del semestre"
+
+[[lectura]]
+numero = 1
+titulo = "Carátula, cubiertas e instrucciones de uso"
+paginas = "1-2, 4-6"
+nota = """El orden es: la carátula (p. 1), la contracubierta y el interior de cubierta \
+(no están en el PDF: están en la biblioteca digital del curso; el interior viene en mala \
+calidad, conviene arreglarlo), y del PDF las páginas 2 a 6 sin la 3 (publicidad). En la \
+página 4 se nombran las Láminas XX (p. 477) y AAA (p. 479): se muestran 2 o 3 segundos y \
+luego se lee su pie."""
+
+[[lectura]]
+numero = 2
+titulo = "La pregunta"
+paginas = "7-15"
+hasta_antes = "Variedades de belleza"
+
+[[lectura]]
+numero = 3
+titulo = "Variedades de belleza"
+paginas = "15-22"
+desde = "Variedades de belleza"
+
+[[lectura]]
+numero = 4
+titulo = "Pitágoras I: pensamiento y objeto"
+paginas = "23-32"
+
+[[lectura]]
+numero = 5
+titulo = "Pitágoras II: número y armonía"
+paginas = "33-42"
+
+[[lectura]]
+numero = 6
+titulo = "Platón I: estructura por simetría; sólidos platónicos"
+paginas = "43-60"
+
+[[lectura]]
+numero = 7
+titulo = "Platón II: escapando de la caverna"
+paginas = "61-72"
+hasta_antes = "Subjetividad objetiva: geometría proyectiva"
+nota = """El diálogo entre Sócrates y Glaucón pide voces distintas, y si aparecen más \
+personajes, también. Agrégalos en Preparar › Citas, cada uno con su voz."""
+
+[[lectura]]
+numero = 8
+titulo = "Subjetividad objetiva: geometría proyectiva"
+paginas = "72-80"
+desde = "Subjetividad objetiva: geometría proyectiva"
+
+[[lectura]]
+numero = 9
+titulo = "Newton I: método y locura"
+paginas = "81-87"
+hasta_pie = "Figura 13"
+
+[[lectura]]
+numero = 10
+titulo = "Mirando a todas partes"
+paginas = "87-93"
+desde = "Mirando a todas partes"
+
+[[lectura]]
+numero = 11
+titulo = "Newton II: color"
+paginas = "94-102"
+
+[[lectura]]
+numero = 12
+titulo = "Newton III: belleza dinámica"
+paginas = "103-111"
+hasta_antes = "Análisis del movimiento"
+
+[[lectura]]
+numero = 13
+titulo = "Análisis del movimiento"
+paginas = "111-119"
+desde = "Análisis del movimiento"
+
+[[lectura]]
+numero = 14
+titulo = "Maxwell I: la estética de Dios"
+paginas = "120-132"
+hasta_antes = "Las ecuaciones de Maxwell"
+
+[[lectura]]
+numero = 15
+titulo = "Las ecuaciones de Maxwell"
+paginas = "132-141"
+desde = "Las ecuaciones de Maxwell"
+
+[[lectura]]
+numero = 16
+titulo = "Maxwell II: las puertas de la percepción"
+paginas = "142-154"
+hasta_antes = "Receptores del color"
+
+[[lectura]]
+numero = 17
+titulo = "Receptores del color"
+paginas = "154-165"
+desde = "Receptores del color"
+
+[[lectura]]
+numero = 18
+titulo = "Preludio a la simetría"
+paginas = "166-175"
+hasta_antes = "La Música de las Esferas: esta vez de verdad"
+nota = """Incluye el capítulo corto «Preludio a la simetría» completo y la primera parte de \
+«Belleza cuántica I: música de las Esferas»."""
+
+[[lectura]]
+numero = 19
+titulo = "La música de las esferas: esta vez de verdad"
+paginas = "175-185"
+desde = "La Música de las Esferas: esta vez de verdad"
+hasta_antes = "Estado estacionario como vibraciones naturales"
+
+[[lectura]]
+numero = 20
+titulo = "Estado estacionario como vibraciones naturales"
+paginas = "185-197"
+desde = "Estado estacionario como vibraciones naturales"
+
+[[lectura]]
+numero = 21
+titulo = "Simetría I: el pasodoble de Einstein"
+paginas = "198-206"
+
+[[lectura]]
+numero = 22
+titulo = "Belleza cuántica II: exuberancia"
+paginas = "207-218"
+
+[[lectura]]
+numero = 23
+titulo = "Simetría II: color local"
+paginas = "219-229"
+hasta_antes = "Yin y yang, cuatro veces"
+nota = """Incluye el capítulo «Simetría II: color local» completo y el comienzo de \
+«Belleza cuántica III: la belleza del corazón de la naturaleza»."""
+
+[[lectura]]
+numero = 24
+titulo = "Yin y yang, cuatro veces"
+paginas = "229-240"
+desde = "Yin y yang, cuatro veces"
+hasta_antes = "Parte 2: la fuerza fuerte, en concreto"
+
+[[lectura]]
+numero = 25
+titulo = "La fuerza fuerte, en concreto"
+paginas = "240-251"
+desde = "Parte 2: la fuerza fuerte, en concreto"
+hasta_antes = "Obsequios de entendimiento"
+
+[[lectura]]
+numero = 26
+titulo = "Obsequios de entendimiento"
+paginas = "251-262"
+desde = "Obsequios de entendimiento"
+hasta_antes = "Fluido de Higgs, campo de Higgs, bosón de Higgs"
+
+[[lectura]]
+numero = 27
+titulo = "Fluido de Higgs, campo de Higgs, bosón de Higgs"
+paginas = "262-275"
+desde = "Fluido de Higgs, campo de Higgs, bosón de Higgs"
+
+[[lectura]]
+numero = 28
+titulo = "Simetría III: Emmy Noether, tiempo, energía y cordura"
+paginas = "276-284"
+hasta_antes = "Emmy Noether, en persona"
+
+[[lectura]]
+numero = 29
+titulo = "Emmy Noether, en persona"
+paginas = "284-290"
+desde = "Emmy Noether, en persona"
+
+[[lectura]]
+numero = 30
+titulo = "Belleza cuántica IV: en la belleza confiamos"
+paginas = "291-305"
+hasta_antes = "Presentando a SUSY"
+nota = "Se lee desde el título del capítulo."
+
+[[lectura]]
+numero = 31
+titulo = "Presentando a SUSY"
+paginas = "305-317"
+desde = "Presentando a SUSY"
+nota = """Es obligatorio leer la Nota 14 que cierra el capítulo: está en la página 497 del \
+PDF («14. La unificación de las fuerzas…»). El estudio todavía no arma notas (2.h): \
+grábala al final, en una toma aparte."""
+
+[[lectura]]
+numero = 32
+titulo = "¿Una bella respuesta?"
+paginas = "318-325"

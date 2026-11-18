@@ -1,0 +1,22 @@
+# Lectura 23: Simetría II: color local
+# Precargada desde cursos/MEXX.toml (MEXX Lecturas del semestre). Cambia el grupo
+# por el tuyo y prepárala en la consola, o:  ./estudio preparar lecturas/23-simetria-ii-color-local
+
+[lectura]
+curso = "ME"                       # ME (Modelos estocásticos) o LP (Lenguajes de programación)
+grupo = 1                          # dígito del grupo en el SIA
+libro = "../../libros/Wilczek Frank - El Mundo Como Obra De Arte.pdf"
+numero = 23
+paginas = "219-229"                # páginas del PDF, no las impresas. Ej.: "61-72" o "61-72, 446"
+titulo = "Simetría II: color local"
+hasta = "Pero nos estamos adelantando..." # texto con el que termina
+nota = "Incluye el capítulo «Simetría II: color local» completo y el comienzo de «Belleza cuántica III: la belleza del corazón de la naturaleza»."
+
+[pantalla]
+ancho_figura = 0.38                # parte de la pantalla para la figura fija a la derecha (2.f)
+dpi = 200
+segundos_figura = 2                # cuánto se deja una figura sin pie (2.e)
+
+[figuras]
+detectar = true
+persistente = true                 # 2.f: fija la figura a la derecha en los párrafos que hablan de ella

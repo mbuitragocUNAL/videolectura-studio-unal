@@ -1,0 +1,21 @@
+# Lectura 01: Carátula, cubiertas e instrucciones de uso
+# Precargada desde cursos/MEXX.toml (MEXX Lecturas del semestre). Cambia el grupo
+# por el tuyo y prepárala en la consola, o:  ./estudio preparar lecturas/01-caratula-cubiertas-e-instrucciones-de-uso
+
+[lectura]
+curso = "ME"                       # ME (Modelos estocásticos) o LP (Lenguajes de programación)
+grupo = 1                          # dígito del grupo en el SIA
+libro = "../../libros/Wilczek Frank - El Mundo Como Obra De Arte.pdf"
+numero = 1
+paginas = "1-2, 4-6"               # páginas del PDF, no las impresas. Ej.: "61-72" o "61-72, 446"
+titulo = "Carátula, cubiertas e instrucciones de uso"
+nota = "El orden es: la carátula (p. 1), la contracubierta y el interior de cubierta (no están en el PDF: están en la biblioteca digital del curso; el interior viene en mala calidad, conviene arreglarlo), y del PDF las páginas 2 a 6 sin la 3 (publicidad). En la página 4 se nombran las Láminas XX (p. 477) y AAA (p. 479): se muestran 2 o 3 segundos y luego se lee su pie."
+
+[pantalla]
+ancho_figura = 0.38                # parte de la pantalla para la figura fija a la derecha (2.f)
+dpi = 200
+segundos_figura = 2                # cuánto se deja una figura sin pie (2.e)
+
+[figuras]
+detectar = true
+persistente = true                 # 2.f: fija la figura a la derecha en los párrafos que hablan de ella

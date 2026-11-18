@@ -162,6 +162,8 @@ var (
 	tomlNumber = regexp.MustCompile(`(?m)^numero\s*=\s*(\d+)`)
 	tomlTitle  = regexp.MustCompile(`(?m)^titulo\s*=\s*"((?:[^"\\]|\\.)*)"`)
 	tomlPages  = regexp.MustCompile(`(?m)^paginas\s*=\s*"([^"]*)"`)
+	tomlCourse = regexp.MustCompile(`(?m)^curso\s*=\s*"([^"]*)"`)
+	tomlNote   = regexp.MustCompile(`(?m)^nota\s*=\s*"((?:[^"\\]|\\.)*)"`)
 	validID    = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{0,80}$`)
 )
 
@@ -170,6 +172,8 @@ type readingEntry struct {
 	Number   int    `json:"numero"`
 	Title    string `json:"titulo"`
 	Pages    string `json:"paginas"`
+	Course   string `json:"curso"` // ME, LP: readings preloaded from cursos/ are grouped by it
+	Note     string `json:"nota,omitempty"`
 	Prepared bool   `json:"preparada"`
 	Active   bool   `json:"activa"`
 	Takes    int    `json:"tomas"`
@@ -201,13 +205,24 @@ func (h *Hub) listReadings(w http.ResponseWriter, r *http.Request) {
 		if m := tomlPages.FindSubmatch(raw); m != nil {
 			entry.Pages = string(m[1])
 		}
+		if m := tomlCourse.FindSubmatch(raw); m != nil {
+			entry.Course = string(m[1])
+		}
+		if m := tomlNote.FindSubmatch(raw); m != nil {
+			entry.Note = strings.ReplaceAll(string(m[1]), `\"`, `"`)
+		}
 		_, err = os.Stat(filepath.Join(dir, "marcas.json"))
 		entry.Prepared = err == nil
 		takes, _ := filepath.Glob(filepath.Join(dir, "estudio", "takes", "take-*"))
 		entry.Takes = len(takes)
 		out = append(out, entry)
 	}
-	sort.Slice(out, func(i, j int) bool { return out[i].Number < out[j].Number })
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].Course != out[j].Course {
+			return out[i].Course < out[j].Course
+		}
+		return out[i].Number < out[j].Number
+	})
 
 	writeJSON(w, http.StatusOK, map[string]any{
 		"lecturas": out,

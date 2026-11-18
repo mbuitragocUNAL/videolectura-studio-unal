@@ -47,10 +47,14 @@ PALETA = ["#ffab3d", "#35c66b", "#b07cff", "#4c8dff", "#ff5f56",
           "#2ec4c4", "#f06bc4", "#c8c84a", "#8fb3ff", "#ff9f80"]
 
 # Una referencia en el texto: «la Figura 27», «(véase la Lámina FF)».
-REFERENCIA = re.compile(r"\b(Figura|Fig\.|Lámina|Tabla)\s+(\d+|[A-Z]{1,3})\b")
+# También en plural y con varias: «las Láminas VV y WW», «Figuras 20 y 21».
+REFERENCIA = re.compile(r"\b(Figuras?|Fig\.|Láminas?|Tablas?)\s+"
+                        r"((?:\d+|[A-Z]{1,3})\b(?:\s*(?:,|y|e)\s*(?:\d+|[A-Z]{1,3})\b)*)")
+IDENT = re.compile(r"\d+|[A-Z]{1,3}")
 # El comienzo de un pie: «FIGURA 27. El carbono…», «LÁMINA F. Platón…».
-PIE = re.compile(r"^\s*(FIGURA|Figura|FIG\.|Fig\.|LÁMINA|Lámina|LAMINA|TABLA|Tabla)\s+"
-                 r"(\d+|[A-Z]{1,3})\s*[.:]")
+# Un pie puede ser de varias: «LÁMINAS VV, WW. Asumiendo…».
+PIE = re.compile(r"^\s*(FIGURAS?|Figuras?|FIG\.|Fig\.|LÁMINAS?|Láminas?|LAMINAS?|TABLAS?|Tablas?)\s+"
+                 r"(\d+|[A-Z]{1,3})(?:\s*(?:,|y)\s*(?:\d+|[A-Z]{1,3}))*\s*[.:]")
 # Fin de frase: el punto (o ?, !, …) seguido de espacio o de fin de texto,
 # admitiendo comillas o paréntesis de cierre en medio.
 FIN_FRASE = re.compile(r"[.?!…][»”\"')\]]*(?=\s|$)")
@@ -337,13 +341,48 @@ class Texto:
 # preparar
 # ----------------------------------------------------------------------------
 
+def pies_de_pagina(pagina) -> list:
+    """Dónde están los pies (de cualquier figura) en la página."""
+    return [pymupdf.Rect(b[:4]) for b in pagina.get_text("blocks")
+            if b[6] == 0 and PIE.match(nfc(b[4].replace("\n", " ")))]
+
+
+def es_de_otro_pie(img, pie, pies, imagenes) -> bool:
+    """La imagen tiene otro pie justo debajo: es de ese, no de `pie`.
+
+    En el libro el pie va bajo su imagen; «justo debajo» es sin otra imagen
+    en medio.
+    """
+    for q in pies:
+        if abs(q.y0 - pie.y0) < 1 or q.y0 < img.y1 - 4:
+            continue
+        if not any(o != img and o.y0 >= img.y1 - 4 and o.y1 <= q.y0 + 4 for o in imagenes):
+            return True
+    return False
+
+
+def imagen_huerfana(pagina) -> pymupdf.Rect | None:
+    """La imagen más baja de la página que no tiene pie debajo.
+
+    Pasa cuando el libro dejó la imagen al final de una página y su pie al
+    comienzo de la siguiente (la Lámina EE de Wilczek).
+    """
+    pies = pies_de_pagina(pagina)
+    sueltas = [r for r in imagenes_de_pagina(pagina) if not any(q.y0 >= r.y1 - 4 for q in pies)]
+    return max(sueltas, key=lambda r: r.y1) if sueltas else None
+
+
 def localizar_figura(doc, tipo: str, ident: str, preferidas: list[int], forzada: int | None):
     """Busca el pie de la figura en el libro y la imagen que le corresponde.
 
-    Devuelve (página, rect_imagen, rect_pie, texto_pie) o None.
+    Devuelve (página, rect_imagen, rect_pie, texto_pie, página_imagen) o None.
+    La página es la del pie; la de la imagen casi siempre es la misma, salvo
+    cuando el libro partió la figura entre dos páginas.
     """
     palabra = {"figura": r"(?:figura|fig\.?)", "lamina": r"l[áa]mina", "tabla": r"tabla"}[tipo]
-    patron = re.compile(rf"^\s*{palabra}\s+{re.escape(ident)}\s*[.:]", re.I)
+    otra = r"(?:\d+|[A-Z]{1,3})"
+    patron = re.compile(rf"^\s*{palabra}s?\s+(?:{otra}\s*(?:,|y)\s*)*{re.escape(ident)}"
+                        rf"(?:\s*(?:,|y)\s*{otra})*\s*[.:]", re.I)
 
     if forzada:
         orden = [forzada]
@@ -363,10 +402,17 @@ def localizar_figura(doc, tipo: str, ident: str, preferidas: list[int], forzada:
                 continue
             pie = pymupdf.Rect(b["bbox"])
             imagenes = imagenes_de_pagina(pagina)
-            arriba = [r for r in imagenes if r.y1 <= pie.y0 + 4]
+            pies = pies_de_pagina(pagina)
+            arriba = [r for r in imagenes if r.y1 <= pie.y0 + 4 and not es_de_otro_pie(r, pie, pies, imagenes)]
             abajo = [r for r in imagenes if r.y0 >= pie.y1 - 4]
+            propias = [r for r in abajo if not es_de_otro_pie(r, pie, pies, imagenes)]
+            previa = imagen_huerfana(doc[numero - 2]) if numero > 1 and not arriba and not propias else None
             if arriba:
                 img = max(arriba, key=lambda r: r.y1)
+            elif propias:
+                img = min(propias, key=lambda r: r.y0)
+            elif previa is not None:
+                return numero, previa, pie, texto.strip(), numero - 1
             elif abajo:
                 img = min(abajo, key=lambda r: r.y0)
             elif imagenes:
@@ -378,8 +424,24 @@ def localizar_figura(doc, tipo: str, ident: str, preferidas: list[int], forzada:
                     if otro[3] <= pie.y0 - 2:
                         techo = max(techo, otro[3])
                 img = pymupdf.Rect(pie.x0, techo + 4, pie.x1, pie.y0 - 4)
-            return numero, img, pie, texto.strip()
+            return numero, img, pie, texto.strip(), numero
     return None
+
+
+def figura_partida(pag_img, r_img, pag_pie, r_pie, dpi: int):
+    """La figura con su pie cuando el libro dejó la imagen al final de una
+    página y el pie al comienzo de la siguiente: las junta, imagen arriba y
+    pie debajo, como estarían en una sola página. Vectorial hasta el final."""
+    sep = 10
+    ancho = max(r_img.width, r_pie.width)
+    hoja = pymupdf.open()
+    p = hoja.new_page(width=ancho, height=r_img.height + sep + r_pie.height)
+    x = (ancho - r_img.width) / 2
+    p.show_pdf_page(pymupdf.Rect(x, 0, x + r_img.width, r_img.height), pag_img.parent, pag_img.number, clip=r_img)
+    x = (ancho - r_pie.width) / 2
+    y = r_img.height + sep
+    p.show_pdf_page(pymupdf.Rect(x, y, x + r_pie.width, y + r_pie.height), pag_pie.parent, pag_pie.number, clip=r_pie)
+    return p.get_pixmap(dpi=dpi)
 
 
 @dataclass
@@ -461,13 +523,14 @@ def analizar(cfg: Config, doc) -> Analisis:
         i = leido.linea_de(m.start())
         if lineas[i].tipo != "texto":
             continue
-        palabra, ident = m.group(1), m.group(2)
-        nombre = {"Fig.": "Figura"}.get(palabra, palabra) + " " + ident
+        palabra = {"Fig.": "Figura"}.get(m.group(1), m.group(1).rstrip("s"))
         fin = FIN_FRASE.search(leido.cadena, m.end())
         j = leido.linea_de(fin.start()) if fin else i
-        menciones.setdefault(nombre, [])
-        if not menciones[nombre] or menciones[nombre][-1][1] != j:   # una por frase
-            menciones[nombre].append((i, j))
+        for ident in IDENT.findall(m.group(2)):
+            nombre = f"{palabra} {ident}"
+            menciones.setdefault(nombre, [])
+            if not menciones[nombre] or menciones[nombre][-1][1] != j:   # una por frase
+                menciones[nombre].append((i, j))
 
     nombres = list(menciones) if detectar else []
     nombres += [n for n in ajustes if n not in nombres]
@@ -494,10 +557,13 @@ def analizar(cfg: Config, doc) -> Analisis:
         if not hallada:
             avisos.append(f"{nombre}: no encontré su pie en el libro. Indica la página donde está.")
             continue
-        pag, r_img, r_pie, texto_pie = hallada
-        ficha.update(pagina=pag, encontrada=True, pie=texto_pie, enLaTira=pag in paginas,
-                     _img=r_img, _pie=r_pie,
-                     img=[round(v, 1) for v in r_img], imgPie=[round(v, 1) for v in (r_img | r_pie)])
+        pag, r_img, r_pie, texto_pie, pag_img = hallada
+        ficha.update(pagina=pag, paginaImg=pag_img, encontrada=True, pie=texto_pie, enLaTira=pag in paginas,
+                     _img=r_img, _pie=r_pie, img=[round(v, 1) for v in r_img],
+                     pieCaja=[round(v, 1) for v in r_pie],
+                     # imagen y pie en la misma página: un solo recorte; si el
+                     # libro los partió, la consola los junta (img + pieCaja).
+                     imgPie=[round(v, 1) for v in (r_img | r_pie)] if pag_img == pag else None)
         if ficha["omitida"]:
             continue
 
@@ -696,14 +762,21 @@ def escribir(cfg: Config, doc, a: Analisis) -> dict:
         if not f["encontrada"] or f["omitida"]:
             continue
         pagina = doc[f["pagina"] - 1]
+        pag_img = doc[f["paginaImg"] - 1]
         margen = 6
         con_pie = (f["_img"] | f["_pie"]) + (-margen, -margen, margen, margen)
         sin_pie = f["_img"] + (-2, -2, 2, 2)
         dpi = max(cfg.dpi, 200)
-        pagina.get_pixmap(dpi=dpi, clip=con_pie & pagina.rect).save(dir_figuras / f"{f['id']}-pie.png")
-        pagina.get_pixmap(dpi=dpi, clip=sin_pie & pagina.rect).save(dir_figuras / f"{f['id']}.png")
+        if pag_img.number == pagina.number:
+            pagina.get_pixmap(dpi=dpi, clip=con_pie & pagina.rect).save(dir_figuras / f"{f['id']}-pie.png")
+        else:
+            figura_partida(pag_img, sin_pie & pag_img.rect, pagina,
+                           (f["_pie"] + (-margen, -margen, margen, margen)) & pagina.rect,
+                           dpi).save(dir_figuras / f"{f['id']}-pie.png")
+            con_pie = f["_pie"] + (-margen, -margen, margen, margen)   # lo que hay de ella en la página del pie
+        pag_img.get_pixmap(dpi=dpi, clip=sin_pie & pag_img.rect).save(dir_figuras / f"{f['id']}.png")
         ficha = {
-            "id": f["id"], "nombre": f["nombre"], "pagina": f["pagina"],
+            "id": f["id"], "nombre": f["nombre"], "pagina": f["pagina"], "paginaImg": f["paginaImg"],
             "img": f"figuras/{f['id']}.png", "imgPie": f"figuras/{f['id']}-pie.png",
             "pie": f["pie"], "enLaTira": f["enLaTira"], "menciones": [n(i) for i in f["menciones"]],
         }
@@ -1208,6 +1281,124 @@ def nueva(args) -> None:
     preparar(carpeta)
 
 
+
+# ----------------------------------------------------------------------------
+# precargar: las lecturas de un curso, desde cursos/<CURSO>.toml
+# ----------------------------------------------------------------------------
+
+def _norm_titulo(s: str) -> str:
+    s = unicodedata.normalize("NFKD", nfc(s)).encode("ascii", "ignore").decode().casefold()
+    return re.sub(r"[^a-z0-9]+", " ", s).strip()
+
+
+def buscar_titulo(todas: list[Linea], titulo: str, desde: int = 0) -> int | None:
+    """La línea (de tipo título) donde empieza la sección `titulo`. Un título
+    largo puede ocupar dos líneas: basta que la primera sea su comienzo."""
+    t = _norm_titulo(titulo)
+    for i in range(desde, len(todas)):
+        l = todas[i]
+        if l.tipo != "titulo":
+            continue
+        n = _norm_titulo(l.texto)
+        if n and (t.startswith(n) or n.startswith(t)):
+            return i
+    return None
+
+
+def buscar_pie(todas: list[Linea], figura: str, desde: int = 0) -> int | None:
+    """La última línea del pie de `figura` («Figura 13»)."""
+    palabra, ident = figura.split(maxsplit=1)
+    patron = re.compile(rf"^\s*{re.escape(palabra[:3])}\w*\.?\s+{re.escape(ident)}\s*[.:]", re.I)
+    for i in range(desde, len(todas)):
+        if patron.match(nfc(todas[i].texto)):
+            j = i
+            while j + 1 < len(todas) and (todas[j + 1].pag, todas[j + 1].bloque) == (todas[i].pag, todas[i].bloque):
+                j += 1
+            return j
+    return None
+
+
+def precargar(spec: Path, forzar: bool = False, solo: list[int] | None = None) -> list[dict]:
+    """Crea lecturas/NN-titulo/lectura.toml para cada lectura del curso.
+
+    Las que ya existen (una carpeta con ese número) no se tocan, salvo con
+    `forzar`. Devuelve, por lectura, qué se hizo y cómo quedó el análisis.
+    """
+    requiere_pymupdf()
+    datos_curso = tomllib.loads(spec.read_text(encoding="utf-8"))
+    curso = datos_curso["curso"]
+    libro = ESTUDIO / "libros" / curso["libro"]
+    if not libro.exists() and os.environ.get("LIBROS"):
+        libro = Path(os.environ["LIBROS"]) / curso["libro"]
+    if not libro.exists():
+        raise ErrorLectura(f"Falta el libro: guarda «{curso['libro']}» en libros/.")
+    doc = pymupdf.open(libro)
+    raiz = ESTUDIO / "lecturas"
+    raiz.mkdir(exist_ok=True)
+    informe = []
+    for L in datos_curso["lectura"]:
+        num = int(L["numero"])
+        if solo and num not in solo:
+            continue
+        carpeta = raiz / f"{num:02d}-{slug(L['titulo'])}"
+        otras = [c for c in raiz.glob(f"{num:02d}-*") if (c / "lectura.toml").exists() and c != carpeta]
+        existente = (otras or [carpeta])[0]
+        trabajada = (existente / "marcas.json").exists() or any((existente / "estudio" / "takes").glob("take-*"))
+        if ((carpeta / "lectura.toml").exists() or otras) and (not forzar or trabajada):
+            # Una lectura ya preparada o con tomas es de alguien: nunca se reescribe.
+            informe.append({"numero": num, "carpeta": existente.name,
+                            "estado": "ya está preparada" if trabajada else "ya existe"})
+            continue
+        lectura = {"curso": curso["codigo"], "grupo": 1, "libro": f"../../libros/{curso['libro']}",
+                   "numero": num, "paginas": L["paginas"], "titulo": L["titulo"]}
+        cfg = Config(carpeta, {"lectura": dict(lectura, libro=str(libro))})
+        todas = analizar(cfg, doc).todas
+        avisos, i0 = [], 0
+        if L.get("desde"):
+            i = buscar_titulo(todas, L["desde"])
+            if i is None:
+                avisos.append(f"no encontré el título «{L['desde']}»")
+            else:
+                i0 = i
+                lectura["desde"] = ancla_unica(todas, i)
+        fin = None
+        if L.get("hasta_antes"):
+            j = buscar_titulo(todas, L["hasta_antes"], i0 + 1)
+            if j is None:
+                avisos.append(f"no encontré el título «{L['hasta_antes']}»")
+            else:
+                fin = j - 1
+        elif L.get("hasta_pie"):
+            fin = buscar_pie(todas, L["hasta_pie"], i0)
+            if fin is None:
+                avisos.append(f"no encontré el pie de la {L['hasta_pie']}")
+        if fin is not None:
+            lectura["hasta"] = ancla_unica(todas, fin, al_final=True)
+        if L.get("nota"):
+            lectura["nota"] = L["nota"]
+        datos = {"lectura": lectura,
+                 "pantalla": {"ancho_figura": 0.38, "dpi": 200, "segundos_figura": 2},
+                 "figuras": {"detectar": True, "persistente": True}}
+        carpeta.mkdir(parents=True, exist_ok=True)
+        escribir_toml(carpeta, datos)
+        texto = (carpeta / "lectura.toml").read_text(encoding="utf-8").split("\n")
+        texto[1:3] = [f"# Precargada desde cursos/{spec.name} ({curso.get('fuente', '')}). Cambia el grupo",
+                      f"# por el tuyo y prepárala en la consola, o:  ./estudio preparar lecturas/{carpeta.name}"]
+        (carpeta / "lectura.toml").write_text("\n".join(texto), encoding="utf-8")
+
+        # Comprobación: el análisis de lo que quedó escrito.
+        cfg = Config(carpeta, dict(datos, lectura=dict(lectura, libro=str(libro))))
+        a = analizar(cfg, doc)
+        informe.append({
+            "numero": num, "carpeta": carpeta.name, "estado": "creada",
+            "empieza": a.lineas[0].texto[:60], "termina": a.lineas[-1].texto[-60:],
+            "figuras": [f["nombre"] + ("" if f["encontrada"] else " (sin pie)") for f in a.figuras],
+            "minutos": round(duracion_estimada(cfg, a)["150"] / 60, 1),
+            "avisos": avisos + a.avisos,
+        })
+    return informe
+
+
 # ----------------------------------------------------------------------------
 
 def main() -> None:
@@ -1228,6 +1419,11 @@ def main() -> None:
     p = sub.add_parser("preparar", help="regenerar páginas, figuras, citas y marcas.json")
     p.add_argument("carpeta")
 
+    c = sub.add_parser("precargar", help="crear las lecturas de un curso desde cursos/<CURSO>.toml")
+    c.add_argument("curso", help="p. ej. cursos/MEXX.toml")
+    c.add_argument("--solo", default="", help='solo esos números, p. ej. "7" o "1,31"')
+    c.add_argument("--forzar", action="store_true", help="reescribir las que ya existen")
+
     # Las usa el estudio: responden JSON.
     sub.add_parser("libro", help="(JSON) páginas e índice de un PDF").add_argument("pdf")
     sub.add_parser("config", help="(JSON) el lectura.toml de una carpeta").add_argument("carpeta")
@@ -1240,6 +1436,23 @@ def main() -> None:
         nueva(args)
     elif args.orden == "preparar":
         preparar(Path(args.carpeta))
+    elif args.orden == "precargar":
+        solo = [int(x) for x in args.solo.replace(" ", "").split(",") if x]
+        try:
+            informe = precargar(Path(args.curso).resolve(), args.forzar, solo)
+        except ErrorLectura as e:
+            sys.exit(f"  {e}")
+        for r in informe:
+            if r["estado"] != "creada":
+                print(f"  {r['numero']:2d}  {r['carpeta']}: {r['estado']}, no la toco")
+                continue
+            print(f"  {r['numero']:2d}  {r['carpeta']}  (~{r['minutos']} min)")
+            print(f"        empieza: {r['empieza']}")
+            print(f"        termina: …{r['termina']}")
+            if r["figuras"]:
+                print(f"        figuras: {', '.join(r['figuras'])}")
+            for av in r["avisos"]:
+                print(f"        aviso: {av}")
     else:
         ordenes_json(args.orden, args)
 

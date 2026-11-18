@@ -4,6 +4,7 @@
 #   ./estudio nueva --libro ~/Downloads/LIBRO.pdf --paginas 207-218 \
 #                   --numero 22 --titulo "Belleza cuántica II: exuberancia"
 #   ./estudio preparar lecturas/22-belleza-cuantica-ii-exuberancia
+#   ./estudio precargar cursos/MEXX.toml     (todas las lecturas de un curso)
 #   ./estudio abrir    lecturas/22-belleza-cuantica-ii-exuberancia
 #   ./estudio abrir                 (y elegir o crear la lectura en /lecturas)
 #   ./estudio cerrar
@@ -61,7 +62,7 @@ voces() {
 
 orden="${1:-}"; shift || true
 case "$orden" in
-  nueva|preparar)
+  nueva|preparar|precargar)
     preparar "$orden" "$@"
     ;;
   abrir)

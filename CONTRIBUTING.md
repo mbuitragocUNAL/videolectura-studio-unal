@@ -19,7 +19,8 @@ otro libro o una idea bien explicada valen tanto como el código.
 Cosas que harían falta y nadie ha hecho todavía:
 
 - **Notas al pie (2.h).** Mostrar la nota sola en pantalla cuando el texto llega a su llamada, como se hace con las figuras.
-- **Otros libros y cursos.** Probar con el libro de Lenguajes de Programación y otros PDF: dónde falla la detección de párrafos, figuras o secciones.
+- **La lista de Lenguajes de Programación (u otro curso).** Si tienes el documento con las lecturas del semestre, transcríbelo a `cursos/LPXX.toml` siguiendo `cursos/MEXX.toml`, corre `./estudio precargar cursos/LPXX.toml` y revisa el informe: dónde empieza y termina cada lectura, sus figuras y su duración.
+- **Otros libros.** Probar con el libro de Lenguajes de Programación y otros PDF: dónde falla la detección de párrafos, figuras o secciones.
 - **Linux y Windows.** Está probado en macOS. Hace falta probar el flujo completo en Linux y en Windows con WSL, y documentarlo.
 - **Qwen3-TTS más rápido en el contenedor**, o un motor local liviano para quien no tiene un Mac.
 - **Un editor de tiempos de las figuras**, para mover a mano el instante en que aparece una figura cuando la transcripción se equivoca.

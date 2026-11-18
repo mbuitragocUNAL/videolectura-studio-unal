@@ -90,3 +90,33 @@ export async function cropOf(doc: PDFDocumentProxy, n: number, box: number[], wi
   out.getContext('2d')!.drawImage(full, x0 * scale, y0 * scale, out.width, out.height, 0, 0, out.width, out.height)
   return out.toDataURL('image/png')
 }
+
+/**
+ * A figure the book split across two pages: the image at the foot of one page
+ * and its caption at the head of the next. Both crops stacked, image on top,
+ * at the same scale, as they would sit on a single page.
+ */
+export async function stackedCropOf(doc: PDFDocumentProxy, imgPage: number, imgBox: number[],
+  capPage: number, capBox: number[], width = 360) {
+  const [a, b] = await Promise.all([loadImage(await cropOf(doc, imgPage, imgBox, width)),
+    loadImage(await cropOf(doc, capPage, capBox, width))])
+  const gap = Math.round(width * 0.03)
+  const out = document.createElement('canvas')
+  out.width = Math.max(a.width, b.width)
+  out.height = a.height + gap + b.height
+  const ctx = out.getContext('2d')!
+  ctx.fillStyle = '#fff'
+  ctx.fillRect(0, 0, out.width, out.height)
+  ctx.drawImage(a, (out.width - a.width) / 2, 0)
+  ctx.drawImage(b, (out.width - b.width) / 2, a.height + gap)
+  return out.toDataURL('image/png')
+}
+
+function loadImage(src: string) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => resolve(img)
+    img.onerror = reject
+    img.src = src
+  })
+}
