@@ -7,7 +7,7 @@
 const studio = useStudio()
 const transport = useTransport()
 const { reading, error, takes, quotes, keptSeconds, overBudget } = studio
-const { state, connected, notice, nextQuote, playing, recording, paused, busy } = transport
+const { state, connected, notice, countdown, nextQuote, playing, recording, paused, busy } = transport
 
 type Scope = 'lectura' | 'montaje' | 'render'
 
@@ -137,6 +137,10 @@ function recordParagraph(index: number) {
 
 function onKey(e: KeyboardEvent) {
   if (e.target instanceof HTMLInputElement) return
+  // While the pre-roll counts down nothing is settled yet: a second R here
+  // would ask the presenter for a second screen-share. Let only Escape through,
+  // so a mistaken start can still be abandoned by cancelling the share.
+  if (countdown.value !== null && e.key !== 'Escape') { e.preventDefault(); return }
   // The montage binds the same keys to editing — space plays the take, the
   // arrows walk the playhead — so while it is on screen it owns them. Nothing
   // is recorded from the montage anyway.
@@ -151,6 +155,7 @@ function onKey(e: KeyboardEvent) {
       else recordParagraph(transport.paragraph.value)
       break
     case 's': case 'S': transport.stopTake(); break
+    case 'd': case 'D': if (busy.value) transport.discardTake(); break
     case 'm': case 'M': transport.toggleMute(); break
     case 'l': case 'L': transport.togglePlate(); break
     case 'a': case 'A': transport.putArrow(state.value.plate ? null : 0.4); break
@@ -203,7 +208,15 @@ function onKey(e: KeyboardEvent) {
       </UBadge>
 
       <div class="ml-auto flex items-baseline gap-5 text-right shrink-0">
-        <div v-if="busy">
+        <div v-if="countdown !== null">
+          <div class="text-[19px] font-medium tabular text-[var(--color-voice-zenon)]">
+            {{ countdown === 0 ? '●' : countdown }}
+          </div>
+          <div class="text-[9px] uppercase tracking-[0.12em] text-score-faint">
+            {{ countdown === 0 ? 'grabando' : 'prepárate' }}
+          </div>
+        </div>
+        <div v-else-if="busy">
           <div
             class="text-[19px] font-medium tabular"
             :class="paused ? 'text-warning' : 'text-[var(--color-voice-zenon)]'"

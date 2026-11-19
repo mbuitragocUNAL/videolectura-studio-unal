@@ -64,11 +64,13 @@ func TestBuildArgsPlacesQuotes(t *testing.T) {
 	if len(a.Inputs) != 4 {
 		t.Fatalf("inputs %v", a.Inputs)
 	}
-	if !strings.Contains(a.Filter, "[2:a]adelay=2000|2000") {
-		t.Fatalf("first quote not delayed to 2s: %q", a.Filter)
+	// Each quote is resampled to the narration's 48 kHz before it is delayed
+	// into place, or amix would read a 44.1 kHz clip as 48 kHz.
+	if !strings.Contains(a.Filter, "[2:a]aresample=48000,aformat=channel_layouts=stereo,adelay=2000|2000") {
+		t.Fatalf("first quote not resampled and delayed to 2s: %q", a.Filter)
 	}
-	if !strings.Contains(a.Filter, "[3:a]adelay=12500|12500") {
-		t.Fatalf("second quote not delayed to 12.5s: %q", a.Filter)
+	if !strings.Contains(a.Filter, "[3:a]aresample=48000,aformat=channel_layouts=stereo,adelay=12500|12500") {
+		t.Fatalf("second quote not resampled and delayed to 12.5s: %q", a.Filter)
 	}
 	if !strings.Contains(a.Filter, "amix=inputs=3:normalize=0:dropout_transition=0:duration=first") {
 		t.Fatalf("mix is wrong: %q", a.Filter)

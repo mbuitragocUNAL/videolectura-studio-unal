@@ -200,6 +200,7 @@ class Linea:
     y: float = 0.0      # posición en la tira, en píxeles
     h: float = 0.0
     html: str = ""      # el mismo texto con cursivas, negritas y subíndices
+    cita_estilo: bool = False  # el lector marcó su cita para verse como en el libro
 
 
 def lineas_de_pagina(pagina) -> list[Linea]:
@@ -472,6 +473,11 @@ def analizar(cfg: Config, doc) -> Analisis:
     nombres = list(menciones) if detectar else []
     nombres += [n for n in ajustes if n not in nombres]
 
+    # Figuras con uno o más tramos fijados a mano: su persistencia la deciden
+    # esos tramos, no el automático de párrafos completos. El automático
+    # cubriría el párrafo entero y taparía el tramo exacto que se eligió.
+    con_tramo_manual = {nfc(f.get("figura", "")) for f in cfg.datos.get("fija", [])}
+
     figuras, eventos, persistencias = [], [], []
     for nombre in nombres:
         ajuste = ajustes.get(nombre, {})
@@ -506,8 +512,9 @@ def analizar(cfg: Config, doc) -> Analisis:
                             "i": i_desde + j})
 
         # 2.f: la figura queda fija a la derecha mientras se leen los párrafos
-        # que hablan de ella.
-        if ficha["persistente"] and lista:
+        # que hablan de ella. Se omite si hay tramos fijados a mano para esta
+        # figura: esos tramos son la elección explícita y mandan.
+        if ficha["persistente"] and lista and nfc(nombre) not in con_tramo_manual:
             parrafos = sorted({lineas[i].parrafo for i, _ in lista})
             tramos: list[list[int]] = []
             for par in parrafos:
@@ -576,6 +583,12 @@ def analizar(cfg: Config, doc) -> Analisis:
         n_ini, n_fin = leido.linea_de(ini), leido.linea_de(fin - 1)
         ficha.update(texto=dicho, i=i_desde + n_ini, iFin=i_desde + n_fin,
                      enLinea=bool(c.get("en_linea", n_fin == n_ini)))
+        # El lector pidió que esta cita se vea como en el libro: se marcan sus
+        # líneas para que componer.py las componga con estilo de cita.
+        if c.get("estilo_cita"):
+            for li in range(n_ini, n_fin + 1):
+                if 0 <= li < len(lineas):
+                    lineas[li].cita_estilo = True
     for f in citas:
         if f.get("error"):
             avisos.append(f"Cita {f['k']} ({f['personaje'] or 'sin personaje'}): {f['error']}.")
@@ -976,6 +989,7 @@ COMENTARIOS = {
     ("musica", "atenuar"): "bajarla un poco más mientras se lee",
     ("voces", "motor"): "elevenlabs, qwen (en el computador) o manual (audio propio)",
     ("voces", "voz"): "id de la voz: de ElevenLabs, o la carpeta en voces/qwen/",
+    ("cita", "estilo_cita"): "mostrar el texto en pantalla como en el libro: letra menor, sangría y versos",
 }
 
 

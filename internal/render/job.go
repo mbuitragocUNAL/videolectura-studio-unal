@@ -11,10 +11,12 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"studio/internal/project"
@@ -242,40 +244,82 @@ func (r *Runner) run(job *Job, plan Plan) error {
 		}
 	}
 
-	total := plan.Total()
-	done := 0.0
-	pieces := make([]string, 0, len(plan.Takes))
+	// Each take becomes its own piece, and the pieces are independent, so they
+	// encode in parallel. The slot a piece writes to is its index, so the
+	// order the video is joined in never depends on which worker finished
+	// first. The count of workers and the threads each ffmpeg keeps are split
+	// from the machine's own cores: libx264 is already multi-threaded, so a
+	// pile of all-core encodes would only fight over the CPU.
+	workers, threads := encodeFanout(len(plan.Takes))
 
+	type pieceJob struct {
+		index int
+		take  TakePlan
+		path  string
+	}
+	var queue []pieceJob
 	for i, take := range plan.Takes {
-		piece := filepath.Join(plan.WorkDir, fmt.Sprintf("piece-%02d.mov", i+1))
-		pieces = append(pieces, piece)
-
-		step := fmt.Sprintf("toma %d de %d", i+1, len(plan.Takes))
-		job.update(func(j *Status) { j.Step = step })
-
 		args := BuildArgs(take)
 		if args.Empty {
-			pieces = pieces[:len(pieces)-1]
 			continue
 		}
-		cmd := args.CommandLine(piece)
-		base := done
-		err := runFFmpeg(job, cmd, func(seconds float64) {
-			if total <= 0 {
-				return
+		queue = append(queue, pieceJob{i, take, filepath.Join(plan.WorkDir, fmt.Sprintf("piece-%02d.mov", i+1))})
+	}
+	pieces := make([]string, len(queue))
+	for i, pj := range queue {
+		pieces[i] = pj.path
+	}
+
+	var (
+		encoded  int64
+		firstErr error
+		errOnce  sync.Once
+		wg       sync.WaitGroup
+	)
+	todo := make(chan pieceJob)
+	stop := make(chan struct{})
+	totalPieces := len(queue)
+
+	report := func() {
+		n := atomic.LoadInt64(&encoded)
+		job.update(func(j *Status) {
+			j.Step = fmt.Sprintf("tomas %d de %d", n, totalPieces)
+			if totalPieces > 0 {
+				j.Progress = float64(n) / float64(totalPieces)
 			}
-			p := (base + seconds) / total
-			if p > 1 {
-				p = 1
-			}
-			job.update(func(j *Status) { j.Progress = p })
 		})
-		if err != nil {
-			return fmt.Errorf("take %d: %w", i+1, err)
+	}
+	report()
+
+	for w := 0; w < workers; w++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for pj := range todo {
+				args := BuildArgs(pj.take)
+				args.Threads = threads
+				if err := runFFmpeg(job, args.CommandLine(pj.path), nil); err != nil {
+					errOnce.Do(func() { firstErr = fmt.Errorf("take %d: %w", pj.index+1, err); close(stop) })
+					return
+				}
+				atomic.AddInt64(&encoded, 1)
+				report()
+			}
+		}()
+	}
+
+feed:
+	for _, pj := range queue {
+		select {
+		case <-stop:
+			break feed
+		case todo <- pj:
 		}
-		for _, s := range keptSpans(take) {
-			done += s
-		}
+	}
+	close(todo)
+	wg.Wait()
+	if firstErr != nil {
+		return firstErr
 	}
 
 	// Even one piece goes through the join: its sound is PCM, which is
@@ -296,6 +340,37 @@ func (r *Runner) run(job *Job, plan Plan) error {
 		job.update(func(j *Status) { j.Duration = d })
 	}
 	return nil
+}
+
+// encodeFanout splits the machine's cores into how many pieces to encode at
+// once and how many threads each ffmpeg keeps. libx264 is already
+// multi-threaded, so running one all-core encode per core only thrashes the
+// CPU; a handful of encoders, each with a few threads, keeps every core busy
+// without the contention. Detected automatically from runtime.NumCPU, capped
+// so a very large machine does not spawn more encoders than pieces.
+func encodeFanout(pieces int) (workers, threads int) {
+	cores := runtime.NumCPU()
+	switch {
+	case cores <= 2:
+		workers = 1
+	case cores <= 5:
+		workers = 2
+	case cores <= 9:
+		workers = 3
+	default:
+		workers = 4
+	}
+	if pieces > 0 && workers > pieces {
+		workers = pieces
+	}
+	if workers < 1 {
+		workers = 1
+	}
+	threads = cores / workers
+	if threads < 1 {
+		threads = 1
+	}
+	return workers, threads
 }
 
 // keptSpans is the rendered length of each surviving stretch of a take.

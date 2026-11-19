@@ -185,6 +185,20 @@ watch(() => level.value.rms, (v) => {
           <template #trailing><UKbd value="S" /></template>
         </UButton>
 
+        <!-- Throw this take away and roll again. Ghost, not error-coloured:
+             Terminar is the one that saves, and the two must not read alike. -->
+        <UButton
+          block
+          color="neutral"
+          variant="ghost"
+          icon="i-lucide-trash-2"
+          class="col-span-2"
+          @click="transport.discardTake()"
+        >
+          Descartar y volver a grabar
+          <template #trailing><UKbd value="D" /></template>
+        </UButton>
+
         <p v-if="paused" class="col-span-2 text-[11px] text-warning">
           En pausa. El texto también se detuvo: al reanudar sigues donde lo dejaste.
         </p>

@@ -76,7 +76,13 @@ func (r *Reading) Beats(p Paragraph, separate map[string]bool) (beats []Beat, sa
 			// the paragraph rather than guess where.
 			continue
 		case e.Mode == ModeCaption && !separate[e.Figure]:
-			at := afterMention(s.text, i, name)
+			// At the end of the sentence that names it, not right after the
+			// name. 2.d is "carry on to the end of the sentence, then show the
+			// figure and read its caption" — and when the figure is named at
+			// the start of a long sentence («…con la Figura 33, de los
+			// resultados de las teorías… al proceso de su creación.»), landing
+			// just past the name put the figure up a whole sentence early.
+			at := sentenceEnd(s.text, i)
 			moments = append(moments, moment{at: at, kind: "caption", figure: e.Figure,
 				caption: []rune(r.caption(e.Figure)), resume: s.lineAt(at)})
 		case e.Mode == ModeBrief:

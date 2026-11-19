@@ -50,6 +50,9 @@ const CHANNEL = 'estoc-studio'
  */
 let channel: BroadcastChannel | null = null
 let chainTimer: ReturnType<typeof setTimeout> | null = null
+// True while the microphone was muted by a playing quote rather than by the
+// reader, so stopping the quote knows to put it back.
+let mutedForQuote = false
 
 /**
  * The clips, keyed by the quote they belong to and built on demand.
@@ -93,6 +96,12 @@ export const useTransport = () => {
   const notice = useState<string | null>('transport-notice', () => null)
   const uploading = useState('uploading', () => false)
   const takeFrom = useState('take-from', () => 0)
+  /**
+   * The 3·2·1 the presenter counts out loud before a single frame records.
+   * `null` means no count is running; the presentation window owns it, the
+   * console only mirrors it so the operator sees the same number on both.
+   */
+  const countdown = useState<number | null>('countdown', () => null)
 
   /**
    * Which paragraph the next take reads.
@@ -123,7 +132,15 @@ export const useTransport = () => {
         case 'level':
           level.value = { rms: m.rms, peak: m.peak }
           break
+        case 'countdown':
+          // Mirror the number, and grab the keyboard back. The share picker
+          // the presenter just dismissed stole focus from this window, so r/s
+          // would otherwise fall on deaf ears for the whole take.
+          countdown.value = m.n
+          if (typeof window !== 'undefined') window.focus()
+          break
         case 'recording-started':
+          countdown.value = null
           takeFrom.value = m.from ?? state.value.f
           // The scroll is deliberately *not* started here. A take is one
           // screenful read against a still page: matching your voice to a
@@ -133,7 +150,22 @@ export const useTransport = () => {
         case 'recording-stopped':
           void upload(m)
           break
+        case 'recording-discarded':
+          notice.value = 'Toma descartada. Vuelve a grabar cuando quieras.'
+          break
+        case 'key':
+          // A shortcut pressed in the presentation window, where the share
+          // picker left the focus. Replay it here as a real keydown so the
+          // console's one handler decides what it means — the presentation
+          // never has to know what R or S do, only that they belong here.
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new KeyboardEvent('keydown', {
+              key: m.key, shiftKey: !!m.shiftKey, bubbles: true, cancelable: true,
+            }))
+          }
+          break
         case 'error':
+          countdown.value = null
           notice.value = m.message
           break
       }
@@ -190,9 +222,23 @@ export const useTransport = () => {
     const audio = clipAudio(clip)
     playing.value = true
     playingQuote.value = i
+
+    // While the synthetic voice speaks over a live take, mute the microphone
+    // so the recording carries clean silence under it — the same thing the
+    // reader used to do by hand, and the thing the takes that sound right all
+    // did. Without it the mic's room tone bleeds under the quote and the mix
+    // comes out wrong. The reader's own mute setting is remembered (the flag)
+    // and put back when the quote ends or is stopped, so a take already muted
+    // by hand stays muted.
+    if (recording.value && !state.value.muted) {
+      mutedForQuote = true
+      send('mute', true)
+    }
+
     audio.onended = () => {
       playing.value = false
       playingQuote.value = -1
+      if (mutedForQuote) { mutedForQuote = false; send('mute', false) }
     }
     audio.currentTime = 0
     audio.play().catch((err) => {
@@ -231,6 +277,9 @@ export const useTransport = () => {
     audios.forEach((a) => { a.pause(); a.onended = null })
     playing.value = false
     playingQuote.value = -1
+    // Cutting the quote early still has to hand the microphone back if the
+    // quote was the one that muted it.
+    if (mutedForQuote) { mutedForQuote = false; send('mute', false) }
     send('release')
   }
 
@@ -244,6 +293,8 @@ export const useTransport = () => {
   const pauseTake = () => send('pause')
   const resumeTake = () => send('resume')
   const stopTake = () => { stopChain(); send('stop') }
+  /** Throw the running take away without saving it, and stay armed to re-read. */
+  const discardTake = () => { stopChain(); send('discard') }
 
   interface StoppedPayload {
     blob: Blob
@@ -340,13 +391,13 @@ export const useTransport = () => {
   )
 
   return {
-    state, connected, notice, level, dbfs, uploading, paragraph, plate, figure,
+    state, connected, notice, level, dbfs, uploading, countdown, paragraph, plate, figure,
     nextQuote, playing, playingQuote,
     recording, paused, armed, busy, deviceLabel,
     connect, disconnect, openPresenter,
     armMic, refreshDevices, toggleMute,
     playNext, replayPrevious, playQuote, currentQuote, stopChain,
-    startTake, pauseTake, resumeTake, stopTake,
+    startTake, pauseTake, resumeTake, stopTake, discardTake,
     setSpeed, toggleRun, seek, nudge, togglePlate, putArrow, goToSection,
   }
 }
