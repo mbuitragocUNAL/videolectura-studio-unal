@@ -650,7 +650,7 @@ func (s *Server) figurePlan(takes []project.Take, strip *render.Strip, workDir s
 
 	var out []render.TakePlan
 	afterFigure := false
-	for _, t := range takes {
+	for ti, t := range takes {
 		// A take is one still, or, when its paragraph moves from one fixed
 		// figure to another, a still per figure, each with the rest of the
 		// sound cut away. Splitting by cuts keeps the audio sample-exact.
@@ -703,6 +703,44 @@ func (s *Server) figurePlan(takes []project.Take, strip *render.Strip, workDir s
 					Frame: h.frame, Fit: true, Silent: true, Duration: hold, Height: s.cfg.Height,
 				})
 				afterFigure = true
+			}
+
+			// A figure named at the very end of the paragraph leaves its
+			// return for the next take: the picture is the last thing on
+			// screen in this one, so there is no line left here to point the
+			// arrow at. When the take ends showing a figure rather than the
+			// page, the reading resumes in the next take — which is where the
+			// arrow belongs.
+			if !afterFigure && t.Paragraph >= 0 && t.Paragraph < len(paragraphs) {
+				beats, _, _ := s.reading.Beats(paragraphs[t.Paragraph], recorded)
+				if n := len(beats); n > 0 && beats[n-1].Kind != project.BeatPage {
+					afterFigure = true
+				}
+			}
+
+			// A figure fixed on the right (2.f) that ran to the end of this
+			// paragraph and does not carry into the next one is a return too:
+			// the reading leaves the narrow column for the full page again, so
+			// the next take gets the arrow, exactly as it would after a plate
+			// or a hold. Without this the arrow only ever appeared when the
+			// figure was let go inside a single paragraph.
+			if !afterFigure && t.Paragraph >= 0 && t.Paragraph < len(paragraphs) {
+				here := s.reading.FixedFigureOf(paragraphs[t.Paragraph])
+				if here != "" {
+					next := ""
+					if ti+1 < len(takes) {
+						nt := takes[ti+1]
+						if !nt.Plate && nt.Paragraph >= 0 && nt.Paragraph < len(paragraphs) &&
+							nt.Paragraph != t.Paragraph {
+							next = s.reading.FixedFigureOf(paragraphs[nt.Paragraph])
+						} else {
+							next = here // same paragraph or a plate: not a return
+						}
+					}
+					if next != here {
+						afterFigure = true
+					}
+				}
 			}
 		}
 	}

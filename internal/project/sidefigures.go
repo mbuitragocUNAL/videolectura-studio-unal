@@ -66,6 +66,11 @@ type SidePart struct {
 type sideEntry struct {
 	figure string
 	at     int
+	// inside is true when the stretch was fixed by hand from a line inside the
+	// paragraph (f.From past its first line). Such a start must be respected,
+	// not pulled back to the top of the paragraph the way an automatic or
+	// carried-over figure is.
+	inside bool
 }
 
 // SideFigures lists the figures fixed beside paragraph p, in the order the
@@ -96,10 +101,13 @@ func (r *Reading) sideEntries(p Paragraph, s spoken) []sideEntry {
 		}
 		seen[f.Figure] = true
 		at := 0
+		inside := false
 		switch {
 		case f.From > first:
-			// Fixed by hand from a line inside the paragraph.
+			// Fixed by hand from a line inside the paragraph: it takes over
+			// exactly there, not at the top of the paragraph.
 			at = s.startOf(f.From)
+			inside = true
 		case f.From == first:
 			// The stretch opens here, so the paragraph is why it is fixed:
 			// it takes over where the text names it, if it does.
@@ -108,13 +116,20 @@ func (r *Reading) sideEntries(p Paragraph, s spoken) []sideEntry {
 			}
 		}
 		// Carried over from an earlier paragraph: it is already on screen.
-		found = append(found, sideEntry{f.Figure, at})
+		found = append(found, sideEntry{f.Figure, at, inside})
 	}
 	if len(found) == 0 {
 		return nil
 	}
 	sort.SliceStable(found, func(i, j int) bool { return found[i].at < found[j].at })
-	found[0].at = 0
+	// The first figure normally covers the paragraph from its top — an
+	// automatic 2.f figure, or one carried over from before, is already on
+	// screen. But a hand-fixed stretch that deliberately starts inside the
+	// paragraph keeps that start, so the page is read plain until the reader
+	// reaches it.
+	if !found[0].inside {
+		found[0].at = 0
+	}
 	return found
 }
 
@@ -177,13 +192,3 @@ func sentenceEnd(text []rune, i int) int {
 	return len(text)
 }
 
-// afterMention is just past the figure's name and the punctuation that
-// follows it: «(Figura 28).», «Figura 30,». That is where a reader stops to
-// read the caption.
-func afterMention(text []rune, i int, name string) int {
-	j := i + len([]rune(name))
-	for j < len(text) && strings.ContainsRune(".,;:"+closers, text[j]) {
-		j++
-	}
-	return j
-}

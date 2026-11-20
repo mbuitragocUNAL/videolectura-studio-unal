@@ -162,10 +162,19 @@ body {{margin: 0; padding: 0; font-family: {familia}; font-size: {cuerpo}pt; lin
 p {{margin-top: 0; margin-bottom: 0;}}
 h2 {{margin: {interlinea * 1.2:.1f}pt 0 {interlinea * 0.6:.1f}pt 0; text-align: center; font-weight: normal;}}
 p.centro {{text-align: center;}}
+p.cita {{margin-top: {interlinea * 0.4:.1f}pt; margin-bottom: {interlinea * 0.4:.1f}pt; margin-left: {SANGRIA_CITA:.1f}pt; margin-right: {SANGRIA_CITA:.1f}pt; text-align: left;}}
 """
 
 
 VINETAS = ("•", "◦", "▪", "‣")
+
+
+# Sangría, en puntos, que lleva a cada lado una cita marcada por el lector. Un
+# valor fijo e igual para todas, como en el libro: así se reconoce la voz
+# citada frente al texto del autor, sin depender de la geometría del PDF. Tiene
+# que ser mayor que la sangría de primera línea de un párrafo normal (unos
+# 30 pt en este libro), o la cita se vería menos adentrada que el texto.
+SANGRIA_CITA = 42.0
 
 
 def _unir(ls) -> str:
@@ -179,9 +188,49 @@ def _unir(ls) -> str:
     return cuerpo
 
 
-def _bloque(ls, x0_texto, centro) -> str:
+def _bloque(ls, x0_texto, x1_texto, centro, cuerpo_pt) -> str:
     """Un bloque de texto con la sangría, el margen y el centrado que tenía en la página."""
     primera, resto = ls[0], ls[1:]
+
+    # Una cita que el lector marcó se compone como en el libro: sangrada a
+    # ambos lados y en su propia letra (más pequeña), que es la señal visual de
+    # que la voz no es la del autor sino la de quien se cita. El texto fluye y
+    # se parte por el ancho del bloque como en el libro, con la sangría intacta
+    # en cada línea de continuación — no se mete <br> por cada línea física del
+    # PDF, que partía una misma oración en dos.
+    if any(getattr(l, "cita_estilo", False) for l in ls):
+        # El tamaño propio de la cita, un punto por debajo del cuerpo cuando el
+        # PDF no lo marca más pequeño (en este libro las citas miden lo mismo
+        # que el cuerpo en los metadatos, aunque en la página se vean menores).
+        tam = statistics.median(l.tam for l in ls)
+        if tam >= cuerpo_pt - 0.3:
+            tam = cuerpo_pt * 0.9
+        # El texto fluye y se parte por el ancho, salvo entre dos renglones de
+        # cita distintos: una línea del PDF que cierra con punto (o ! ?) y va
+        # seguida de otra es un renglón propio del poema, no una continuación
+        # por ancho, así que lleva un salto. Lo demás se une y se rejustifica.
+        cuerpo = ""
+        for i, l in enumerate(ls):
+            frag = (l.html or h.escape(l.texto, quote=False)).strip()
+            if i == 0:
+                cuerpo = frag
+                continue
+            # La línea anterior, sin cierres de comillas/paréntesis, para ver
+            # si cerró una oración: «…curvarse.» termina renglón; «…espacio-»
+            # continúa por ancho; «…recto (en el espacio-» también.
+            prev = ls[i - 1].texto.rstrip().rstrip("»”\")")
+            if cuerpo.endswith("-") and not cuerpo.endswith(" -"):
+                cuerpo += frag                       # palabra partida por guion
+            elif prev.endswith((".", "!", "?")):
+                cuerpo += "<br>" + frag               # renglón de cita propio
+            else:
+                cuerpo += " " + frag                  # continúa la misma oración
+        # Todo en el style inline: en la columna real la regla .cita del CSS no
+        # bastó para sangrar (el margen quedaba en cero), así que el margen va
+        # aquí, donde PyMuPDF Story sí lo aplica.
+        return (f'<p class="cita" style="margin-left: {SANGRIA_CITA:.1f}pt; '
+                f'margin-right: {SANGRIA_CITA:.1f}pt; font-size: {tam:.1f}pt">{cuerpo}</p>')
+
     cuerpo = _unir(ls)
     if not resto and abs((primera.x0 + primera.x1) / 2 - centro) < 14 and primera.x0 > x0_texto + 24:
         return f'<p class="centro">{cuerpo}</p>'
@@ -191,12 +240,13 @@ def _bloque(ls, x0_texto, centro) -> str:
     return f'<p style="margin-left: {margen:.1f}pt; text-indent: {sangria:.1f}pt">{cuerpo}</p>'
 
 
-def _parrafos(lineas, abre, x0_texto, x1_texto):
+def _parrafos(lineas, abre, x0_texto, x1_texto, cuerpo_pt):
     """Los párrafos como los ve el estudio (marcas.json), con su HTML.
 
     Cada párrafo empieza donde marcas.json pone la sangría; los pies de figura
     no se leen como texto y no entran. La sangría, el margen de las listas y
-    lo centrado salen de dónde estaba cada línea en la página."""
+    lo centrado salen de dónde estaba cada línea en la página. `cuerpo_pt` es
+    el tamaño del texto normal, para las citas marcadas por el lector."""
     grupos, actual = [], None
     for i, l in enumerate(lineas):
         if abre[i]:
@@ -216,16 +266,19 @@ def _parrafos(lineas, abre, x0_texto, x1_texto):
         if ls[0].tipo == "titulo":
             html = f'<h2 style="font-size: {tam:.1f}pt">{_unir(ls)}</h2>'
         else:
-            # Un párrafo de lista puede traer varios puntos (•): cada uno es un
-            # bloque, con su viñeta colgando a la izquierda como en el libro.
+            # Un párrafo se parte en bloques en cada viñeta (•) de una lista y
+            # en cada cambio entre texto normal y una cita marcada, para que la
+            # cita sea su propio bloque con su estilo.
             items, actual = [], []
             for l in ls:
-                if actual and l.texto.lstrip().startswith(VINETAS):
+                nueva = l.texto.lstrip().startswith(VINETAS)
+                cambia_cita = actual and getattr(l, "cita_estilo", False) != getattr(actual[-1], "cita_estilo", False)
+                if actual and (nueva or cambia_cita):
                     items.append(actual)
                     actual = []
                 actual.append(l)
             items.append(actual)
-            html = "".join(_bloque(item, x0_texto, centro) for item in items)
+            html = "".join(_bloque(item, x0_texto, x1_texto, centro, cuerpo_pt) for item in items)
         out.append({"n": g["n"], "dicho": dicho, "html": partir(html)})
     return out
 
@@ -336,7 +389,7 @@ def componer(cfg, doc, a, lineas, abre, ancho_figura: float) -> dict:
     escala = (ANCHO - 2 * MARGEN) / ancho_libro            # píxeles por punto
     angosto_px = ANCHO * (1 - ancho_figura) - HUECO_FIGURA - MARGEN
 
-    parrafos = _parrafos(lineas, abre, a.x_texto0, a.x_texto1)
+    parrafos = _parrafos(lineas, abre, a.x_texto0, a.x_texto1, cuerpo)
     css = _css(fuentes, round(cuerpo, 2), round(interlinea, 2))
     out = {"video": [ANCHO, ALTO], "escala": round(escala, 4), "cuerpoPt": round(cuerpo, 2),
            "lectura": 0.38, "figura": {"x0": round(ANCHO * (1 - ancho_figura)), "margen": MARGEN},

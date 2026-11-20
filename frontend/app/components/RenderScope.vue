@@ -20,6 +20,24 @@ const job = ref<Job | null>(null)
 const starting = ref(false)
 let stream: EventSource | null = null
 
+// A render runs on the server, not in this tab. Reloading the page or coming
+// back to it must not lose a render already under way, so on mount we ask the
+// server what the last job is and reattach: a running one gets its live stream
+// again, a finished one shows its download link or its error.
+onMounted(async () => {
+  try {
+    const jobs = await $fetch<Job[]>('/api/renders')
+    const latest = jobs?.[0]
+    if (!latest) return
+    job.value = latest
+    if (latest.state === 'queued' || latest.state === 'running') {
+      watchJob(latest.id)
+    }
+  } catch {
+    // No reachable server or no renders yet: nothing to reattach to.
+  }
+})
+
 onUnmounted(() => stream?.close())
 
 async function start() {

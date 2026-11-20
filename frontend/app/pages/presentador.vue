@@ -44,6 +44,32 @@ const strip = useTemplateRef<HTMLElement>('strip')
 const plateVisible = ref(false)
 const arrowAt = ref<number | null>(null)
 
+// Seconds counted out, on screen, after the share picker closes and before a
+// frame is recorded — long enough to settle, take a breath and start reading
+// on one rather than halfway through a word. `count` drives the overlay; null
+// means no count is running.
+const COUNTDOWN = 3
+const count = ref<number | null>(null)
+
+/**
+ * Count COUNTDOWN…1 on screen, a second apart, resolving when it reaches zero.
+ * Each number is also broadcast so the console shows the same figure — and so
+ * the console can pull keyboard focus back from the picker that just closed.
+ */
+function runCountdown(): Promise<void> {
+  return new Promise((resolve) => {
+    let n = COUNTDOWN
+    const tick = () => {
+      count.value = n
+      channel?.postMessage({ type: 'countdown', n })
+      if (n === 0) { resolve(); return }
+      n -= 1
+      setTimeout(tick, 1000)
+    }
+    tick()
+  })
+}
+
 // `height` is the whole strip; `max` is as far as it can scroll. Both matter,
 // and confusing them is what put the console out of step with the page.
 const scroll = reactive({ y: 0, max: 0, height: 0, speed: 18, running: false })
@@ -82,6 +108,9 @@ interface Capture {
   /** Milliseconds banked before the current segment: the clock stops on pause. */
   recordedMs: number
   segmentStart: number
+  /** Set when the operator threw the take away: the recorder still has to stop
+   *  to release the tracks, but its bytes must never reach the disk. */
+  discarded: boolean
 }
 
 let capture: Capture | null = null
@@ -277,12 +306,28 @@ async function startRecording() {
 
     warnAboutFraming(screenStream)
 
+    // The picker has closed; nothing is recorded yet. Count down in the clear,
+    // so the operator starts reading on one and the take has no dead air or
+    // fumbling at its head. A share cancelled during the count stops the
+    // tracks' `ended` handler from firing mid-count because recording has not
+    // begun, so guard it: bail if the operator already killed the share.
+    await runCountdown()
+    count.value = null
+    if (!screenStream || screenStream.getVideoTracks()[0]?.readyState === 'ended') {
+      screenStream?.getTracks().forEach(t => t.stop())
+      screenStream = null
+      phase.value = micStream ? 'armed' : 'idle'
+      report()
+      return
+    }
+
     const recorder = new MediaRecorder(
       new MediaStream([...screenStream.getVideoTracks(), ...micStream.getAudioTracks()]),
       { mimeType: supportedType(), videoBitsPerSecond: 8_000_000, audioBitsPerSecond: 192_000 },
     )
     const take: Capture = {
-      recorder, chunks: [], cues: [], levels: [], trace: [], recordedMs: 0, segmentStart: 0,
+      recorder, chunks: [], cues: [], levels: [], trace: [], recordedMs: 0,
+      segmentStart: 0, discarded: false,
     }
     // The handlers close over this take, so a recorder that is still flushing
     // writes into its own buffers however long it takes to get there.
@@ -304,6 +349,7 @@ async function startRecording() {
   } catch (err) {
     // A cancelled screen-share leaves the mic armed and nothing recording,
     // which is exactly where the operator should land: ready to try again.
+    count.value = null
     phase.value = micStream ? 'armed' : 'idle'
     screenStream?.getTracks().forEach(track => track.stop())
     screenStream = null
@@ -344,6 +390,26 @@ function stopRecording() {
 }
 
 /**
+ * Throw the current take away and go back to armed, ready to read it again.
+ *
+ * The recorder is stopped the same way — the screen-share tracks have to be
+ * released either way — but the capture is marked discarded first, so when its
+ * `onstop` reaches finish() the bytes are dropped rather than uploaded. The mic
+ * stays open, so you can roll again at once without re-granting anything.
+ */
+function discardRecording() {
+  if (phase.value !== 'recording' && phase.value !== 'paused') return
+  if (capture) capture.discarded = true
+  capture?.recorder.stop()
+  screenStream?.getTracks().forEach(t => t.stop())
+  screenStream = null
+  scroll.running = false
+  phase.value = 'armed'
+  channel?.postMessage({ type: 'recording-discarded' })
+  report()
+}
+
+/**
  * Say so, before a word is read, if the capture is not going to deliver 1080p
  * 16:9.
  *
@@ -379,6 +445,10 @@ function warnAboutFraming(stream: MediaStream) {
 }
 
 async function finish(take: Capture) {
+  // The operator threw this one away. Let the recorder's buffers fall out of
+  // scope with it; nothing is built, nothing is sent.
+  if (take.discarded) return
+
   const blob = new Blob(take.chunks, { type: take.chunks[0]?.type ?? 'video/webm' })
 
   // A WebM begins with the EBML header, 1A 45 DF A3. If this one does not, the
@@ -465,9 +535,27 @@ function report() {
 // component instance to attach to, and Vue fails app initialisation for it.
 let beat: ReturnType<typeof setInterval> | null = null
 
+// The keys the console binds; forwarded verbatim so one handler there stays
+// the single source of truth for what each one does. Anything else (the
+// browser's own shortcuts, devtools) is left alone.
+const FORWARDED = new Set([
+  ' ', 'n', 'N', 'p', 'P', 'r', 'R', 's', 'S', 'd', 'D', 'm', 'M', 'l', 'L',
+  'a', 'A', 'Enter', 'Escape', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
+  'PageUp', 'PageDown',
+])
+
+function forwardKey(e: KeyboardEvent) {
+  if (!FORWARDED.has(e.key)) return
+  // Space and the arrows scroll the page by default; the take must not move
+  // under the reader because a key was pressed here.
+  e.preventDefault()
+  channel?.postMessage({ type: 'key', key: e.key, shiftKey: e.shiftKey })
+}
+
 onUnmounted(() => {
   if (beat) clearInterval(beat)
   window.removeEventListener('resize', measure)
+  window.removeEventListener('keydown', forwardKey)
   stopRecording()
   releaseMic()
   channel?.close()
@@ -493,12 +581,19 @@ onMounted(async () => {
       case 'pause': pauseRecording(); break
       case 'resume': resumeRecording(); break
       case 'stop': stopRecording(); break
+      case 'discard': discardRecording(); break
       case 'mark': markCue(m.value); break
     }
     report()
   }
 
   window.addEventListener('resize', measure)
+  // The share picker drops keyboard focus here, on the presentation, and the
+  // browser will not let the console pull it back to itself. So this window
+  // listens too and forwards the transport keys over the channel; the console
+  // replays them through its own handler. The operator can then drive the take
+  // from whichever window Chrome happened to leave focused.
+  window.addEventListener('keydown', forwardKey)
   beat = setInterval(report, 100)
   requestAnimationFrame(loop)
 
@@ -523,6 +618,12 @@ onMounted(async () => {
 
     <!-- The only other non-page pixel the rules allow. -->
     <div v-if="arrowAt !== null" class="arrow" :style="{ top: `calc(${arrowAt * 100}% - 18px)` }">➤</div>
+
+    <!-- The pre-roll count. It is gone before the recorder starts, so no frame
+         of the take ever carries it. -->
+    <div v-if="count !== null" class="countdown">
+      <span :key="count">{{ count === 0 ? '' : count }}</span>
+    </div>
   </div>
 </template>
 
@@ -555,5 +656,27 @@ onMounted(async () => {
   color: #c0392b;
   pointer-events: none;
   text-shadow: 0 0 6px #fff, 0 0 6px #fff;
+}
+
+.countdown {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.82);
+  pointer-events: none;
+}
+.countdown span {
+  font-size: 22vh;
+  line-height: 1;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: #c0392b;
+  animation: countpop 1s ease-out;
+}
+@keyframes countpop {
+  from { transform: scale(1.25); opacity: 0.35; }
+  to { transform: scale(1); opacity: 1; }
 }
 </style>

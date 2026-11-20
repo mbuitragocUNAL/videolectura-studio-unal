@@ -184,6 +184,7 @@ watch(() => loading.value, v => { if (!v) analyse() })
 
 const lines = computed(() => analysis.value?.todas ?? [])
 const figureById = computed(() => new Map((analysis.value?.figuras ?? []).map(f => [f.id, f])))
+const figureByName = computed(() => new Map((analysis.value?.figuras ?? []).map(f => [f.nombre, f])))
 
 /* ---------- colours: figures and voices ---------- */
 
@@ -211,6 +212,14 @@ const lineState = computed(() => {
     if (c.i === undefined || c.iFin === undefined) continue
     for (let i = c.i; i <= c.iFin; i++) map.set(i, { ...map.get(i), cita: voiceColour(c.personaje) })
   }
+  // The stretch being dragged out now, in the armed figure's own colour, so
+  // the range is visible as you drag before it is committed.
+  const r = dragRange.value
+  const armed = fixing.value
+  if (r && armed) {
+    const colour = figureColour(figureByName.value.get(armed)?.id ?? armed)
+    for (let i = r.lo; i <= r.hi; i++) map.set(i, { ...map.get(i), fija: colour })
+  }
   return map
 })
 
@@ -230,20 +239,95 @@ const menu = ref<{ x: number; y: number; line: Linea } | null>(null)
 const menuEl = useTemplateRef<HTMLElement>('menuEl')
 onClickOutside(menuEl, () => { menu.value = null })
 
-/** While set, a click fixes this figure over the paragraph clicked (2.f). */
+/**
+ * While set, the figure is fixed to the right over the text selected with the
+ * mouse (2.f). You shade the exact passage; the range is snapped to the lines
+ * it touches, because the pipeline fixes a figure by line — the column that
+ * carries the figure can only change between lines, not inside one.
+ */
 const fixing = ref<string | null>(null)
+
+/** The line range the current mouse selection covers, for the live highlight:
+ *  {lo, hi} as line indices, or null when nothing useful is selected. */
+const dragRange = ref<{ lo: number; hi: number } | null>(null)
+
+/**
+ * The lines a Selection actually touches, as sorted {lo, hi} indices, or null.
+ *
+ * It asks each line element whether the selection's range intersects it,
+ * rather than reading anchorNode/focusNode. Those two depend on the drag's
+ * direction and, at the top edge of a line, resolve to the previous line's
+ * text node — which pulled the range a line too high. Intersection is what the
+ * eye sees shaded.
+ */
+function selectedLineRange(sel: Selection | null): { lo: number; hi: number } | null {
+  if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return null
+  const range = sel.getRangeAt(0)
+  let lo = Infinity
+  let hi = -Infinity
+  for (const el of document.querySelectorAll<HTMLElement>('[data-i]')) {
+    if (!range.intersectsNode(el)) continue
+    const i = Number(el.dataset.i)
+    if (Number.isNaN(i)) continue
+    if (i < lo) lo = i
+    if (i > hi) hi = i
+  }
+  if (lo === Infinity) return null
+  return { lo, hi }
+}
+
+/** While a figure is armed, keep the live highlight tracking the selection. */
+function onSelectionChange() {
+  if (!fixing.value) return
+  dragRange.value = selectedLineRange(window.getSelection())
+}
+useEventListener(document, 'selectionchange', onSelectionChange)
+
+/**
+ * The selection is done: fix the figure over the lines it touched. Clears the
+ * browser selection so the next drag starts clean, and disarms the figure.
+ */
+function commitSelection() {
+  if (!fixing.value) return
+  const r = selectedLineRange(window.getSelection())
+  const figure = fixing.value
+  dragRange.value = null
+  if (r) {
+    fixLines(figure, r.lo, r.hi)
+    fixing.value = null
+    window.getSelection()?.removeAllRanges()
+  }
+}
+
+/** In the pages view there is no text to shade (the lines sit over a canvas),
+ *  so a figure is fixed by clicking the first line, then the last. */
+const pageAnchor = ref<number | null>(null)
 
 function onLine(line: Linea, e: MouseEvent) {
   if (fixing.value) {
-    fixParagraph(fixing.value, line)
-    fixing.value = null
+    if (pageAnchor.value === null) {
+      pageAnchor.value = line.i
+      dragRange.value = { lo: line.i, hi: line.i }
+    } else {
+      const lo = Math.min(pageAnchor.value, line.i)
+      const hi = Math.max(pageAnchor.value, line.i)
+      fixLines(fixing.value, lo, hi)
+      fixing.value = null
+      pageAnchor.value = null
+      dragRange.value = null
+    }
     return
   }
   menu.value = { x: e.clientX, y: e.clientY, line }
 }
 
-/** In the text view a click is also how a selection ends; only a plain click picks. */
+/**
+ * Mouseup in the text view. With a figure armed it ends a shading selection;
+ * otherwise a plain click (no selection) opens the line menu, and a real
+ * selection is left for the quote box.
+ */
 function onTextLine(line: Linea, e: MouseEvent) {
+  if (fixing.value) { commitSelection(); return }
   if (window.getSelection()?.toString()) return
   onLine(line, e)
 }
@@ -292,9 +376,16 @@ function setFigure(nombre: string, key: string, value: unknown) {
   else entry[key] = value
   if (Object.keys(entry).length === 1) config.figura = config.figura.filter((f: any) => f !== entry)
 }
-function fixParagraph(nombre: string, line: Linea) {
+/** Fix a figure over an explicit stretch of lines. desde_i/hasta_i are line
+ *  indices; the server turns them into text anchors (config_desde_peticion)
+ *  and lector.py already produces a partial persistencia from them. */
+function fixLines(nombre: string, lo: number, hi: number) {
+  config.fija.push({ figura: nombre, desde_i: lo, hasta_i: hi })
+}
+/** The menu's shortcut: fix over the whole paragraph the line belongs to. */
+function fixWholeParagraph(nombre: string, line: Linea) {
   const r = paragraphRange(line)
-  config.fija.push({ figura: nombre, desde_i: r.desde, hasta_i: r.hasta })
+  fixLines(nombre, r.desde, r.hasta)
 }
 function fixedOf(nombre: string) {
   return config.fija
@@ -303,7 +394,11 @@ function fixedOf(nombre: string) {
 }
 function fixedLabel(f: any) {
   const t = f.desde_i !== undefined ? lines.value[f.desde_i]?.t : f.desde
-  return (t ?? '').slice(0, 48)
+  const n = f.desde_i !== undefined && f.hasta_i !== undefined
+    ? f.hasta_i - f.desde_i + 1
+    : 0
+  const head = (t ?? '').slice(0, 40)
+  return n > 1 ? `${head}… (${n} líneas)` : head
 }
 
 const crops = reactive<Record<string, string>>({})
@@ -326,6 +421,9 @@ function addQuote(texto: string) {
 }
 const selection = ref('')
 function readSelection() {
+  // While a figure is armed the shading means "fix it here", not "make a
+  // quote"; commitSelection already consumed it.
+  if (fixing.value) return
   const s = window.getSelection()?.toString().trim() ?? ''
   selection.value = s.split(/\s+/).length >= 2 ? s : ''
 }
@@ -536,8 +634,8 @@ const fueraDeRango = (s: number) => s < 300 || s > 1500
                 <button class="text-score-dim hover:text-white" @click="config.fija.splice(x.index, 1)">×</button>
               </span>
               <UButton size="xs" variant="ghost" :color="fixing === f.nombre ? 'warning' : 'neutral'" icon="i-lucide-pin"
-                       @click="fixing = fixing === f.nombre ? null : f.nombre">
-                {{ fixing === f.nombre ? 'Haz clic en un párrafo…' : 'Fijar en otro párrafo' }}
+                       @click="fixing = fixing === f.nombre ? null : f.nombre; dragRange = null; pageAnchor = null">
+                {{ fixing === f.nombre ? 'Sombrea el texto…' : 'Fijar en un tramo' }}
               </UButton>
             </div>
           </div>
@@ -562,6 +660,11 @@ const fueraDeRango = (s: number) => s < 300 || s > 1500
               <UButton size="xs" variant="ghost" icon="i-lucide-trash-2" @click="config.cita.splice(k, 1)" />
             </div>
             <UTextarea v-model="c.texto" :rows="2" autoresize size="xs" class="w-full" />
+            <label class="flex items-center gap-1.5 text-[11.5px] text-score-dim mt-1.5">
+              <USwitch size="xs" :model-value="!!c.estilo_cita"
+                       @update:model-value="(v: boolean) => c.estilo_cita = v || undefined" />
+              Estilo de cita en pantalla (letra menor, sangría y versos, como en el libro)
+            </label>
             <div v-if="quoteError(k + 1)" class="text-[11px] text-[var(--ui-error)] mt-1">{{ quoteError(k + 1) }}</div>
           </div>
           <div v-if="analysis.candidatas.length" class="mb-2">
@@ -645,8 +748,15 @@ const fueraDeRango = (s: number) => s < 300 || s > 1500
         </div>
 
         <div v-if="fixing" class="px-4 py-2 bg-[var(--ui-warning)]/15 text-[12.5px]">
-          Haz clic en el párrafo donde <b>{{ fixing }}</b> debe quedar fija a la derecha.
-          <button class="underline ml-2" @click="fixing = null">cancelar</button>
+          <template v-if="view === 'texto'">
+            Sombrea con el mouse el texto donde <b>{{ fixing }}</b> debe quedar fija a la derecha
+            (el tramo se ajusta a las líneas que toque).
+          </template>
+          <template v-else>
+            Haz clic en la primera línea y luego en la última donde <b>{{ fixing }}</b> debe quedar fija a la derecha.
+            <span v-if="pageAnchor !== null" class="text-white">Ahora elige la última línea.</span>
+          </template>
+          <button class="underline ml-2" @click="fixing = null; dragRange = null; pageAnchor = null">cancelar</button>
         </div>
 
         <div class="flex-1 overflow-y-auto px-6 py-8">
@@ -666,7 +776,8 @@ const fueraDeRango = (s: number) => s < 300 || s > 1500
             <template v-for="l in lines" :key="l.i">
               <div v-if="l.i > 0 && l.pag !== lines[l.i - 1]?.pag"
                    class="font-sans text-[10px] text-score-faint my-3 border-t border-score-grid pt-1">p. {{ l.pag }}</div>
-              <div class="relative pl-3 cursor-pointer rounded-[2px] hover:bg-white/[0.04]"
+              <div :data-i="l.i"
+                   class="relative pl-3 cursor-pointer rounded-[2px] hover:bg-white/[0.04]"
                    :class="[
                      analysis && (l.i < analysis.desde || l.i > analysis.hasta) ? 'text-score-faint' : 'text-[#d8dde3]',
                      l.tipo === 'titulo' && 'font-semibold text-white mt-3',
@@ -676,7 +787,7 @@ const fueraDeRango = (s: number) => s < 300 || s > 1500
                      lineState.get(l.i)?.mencion && 'bg-[#4fb0ff]/10',
                      lineState.get(l.i)?.cita && 'bg-[#ff9f45]/15',
                    ]"
-                   @click="(e: MouseEvent) => onTextLine(l, e)">
+                   @mouseup="(e: MouseEvent) => onTextLine(l, e)">
                 <span v-if="lineState.get(l.i)?.fija" class="absolute left-0 top-0 bottom-0 w-[3px]"
                       :style="{ background: lineState.get(l.i)?.fija }" />
                 {{ l.t }}
@@ -700,8 +811,8 @@ const fueraDeRango = (s: number) => s < 300 || s > 1500
       <button class="menu-item" @click="startHere(menu.line)"><UIcon name="i-lucide-arrow-down-to-line" /> La lectura empieza aquí</button>
       <button class="menu-item" @click="endHere(menu.line)"><UIcon name="i-lucide-arrow-up-to-line" /> La lectura termina aquí</button>
       <template v-for="f in (analysis?.figuras ?? []).filter(x => x.encontrada && !x.omitida)" :key="f.id">
-        <button class="menu-item" @click="fixParagraph(f.nombre, menu.line); menu = null">
-          <UIcon name="i-lucide-pin" :style="{ color: figureColour(f.id) }" /> Fijar {{ f.nombre }} en este párrafo
+        <button class="menu-item" @click="fixWholeParagraph(f.nombre, menu!.line); menu = null">
+          <UIcon name="i-lucide-pin" :style="{ color: figureColour(f.id) }" /> Fijar {{ f.nombre }} en todo este párrafo
         </button>
       </template>
     </div>

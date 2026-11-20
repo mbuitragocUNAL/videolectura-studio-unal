@@ -5,6 +5,7 @@ package render
 import (
 	"fmt"
 	"math"
+	"strconv"
 	"strings"
 
 	"studio/internal/project"
@@ -75,6 +76,11 @@ type Args struct {
 	// Empty means the cuts left nothing of this take, so there is nothing to
 	// encode. Rendering it anyway would put the whole uncut take in the video.
 	Empty bool
+	// Threads caps libx264's own threads for this piece. With several pieces
+	// encoding at once it keeps each one from grabbing the whole CPU; zero
+	// leaves it to ffmpeg (all cores), which is right when pieces run one at a
+	// time.
+	Threads int
 }
 
 /*
@@ -166,7 +172,16 @@ func BuildArgs(p TakePlan) Args {
 		var labels strings.Builder
 		for i, c := range p.Cues {
 			ms := int(c.At*1000 + 0.5)
-			parts = append(parts, fmt.Sprintf("[%d:a]adelay=%d|%d,volume=%g[c%d]", i+2, ms, ms, p.Gain, i+2))
+			// Resample the quote to the narration's 48 kHz stereo before the
+			// mix. The TTS clips come out of ElevenLabs at 44.1 kHz mono, and
+			// amix adopts the first input's rate (the 48 kHz voice) without
+			// converting the others — so a 44.1 kHz quote was read as if it
+			// were 48 kHz, which at best plays sharp and fast and at worst
+			// drops out of the mix. adelay then counts its delay in samples of
+			// the right rate.
+			parts = append(parts, fmt.Sprintf(
+				"[%d:a]aresample=48000,aformat=channel_layouts=stereo,adelay=%d|%d,volume=%g[c%d]",
+				i+2, ms, ms, p.Gain, i+2))
 			fmt.Fprintf(&labels, "[c%d]", i+2)
 		}
 		// normalize=0 keeps the narration at its recorded level instead of
@@ -240,7 +255,10 @@ func (a Args) CommandLine(output string) []string {
 		// 1024 samples, so every piece's sound would run a little past its
 		// picture and the joins would drift. PCM ends on the sample.
 		"-c:a", "pcm_s16le", "-ar", "48000", "-ac", "2",
-		output,
 	)
+	if a.Threads > 0 {
+		cmd = append(cmd, "-threads", strconv.Itoa(a.Threads))
+	}
+	cmd = append(cmd, output)
 	return cmd
 }
